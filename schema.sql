@@ -60,7 +60,6 @@ CREATE TABLE documents (
 --
 
 CREATE TABLE operations (
-    id uuid DEFAULT uuid_generate_v4() NOT NULL,
     collection_name text NOT NULL,
     document_name text NOT NULL,
     version bigint NOT NULL,
