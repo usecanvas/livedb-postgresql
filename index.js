@@ -249,4 +249,38 @@ LivePg.prototype.getVersion = function getVersion(cName, docName, cb) {
     });
 };
 
+/**
+ * A callback called with ops
+ *
+ * @callback LivePg~getOpsCallback
+ * @param {?Error} err an error
+ * @param {?Array(Object)} ops the requested ops
+ */
+/**
+ * Get operations between `start` and `end`, noninclusively.
+ *
+ * @method
+ * @param {string} cName a collection name
+ * @param {string} docName a document name
+ * @param {number} start the start version
+ * @param {end} end the end version
+ * @param {LivePg~getOpsCallback} cb a callback called with the ops
+ */
+LivePg.prototype.getOps = function getOps(cName, docName, start, end, cb) {
+  var query = this.db(this.table).where('version', '>=', start);
+
+  if (typeof end === 'number') {
+    query.andWhere('version', '<', end);
+  }
+
+  query.select('data')
+    .orderBy('version', 'asc')
+    .exec(function onResult(err, rows) {
+      if (err) return cb(err);
+      cb(null, rows.map(function eachRow(row) {
+        return row.data;
+      }));
+    });
+};
+
 module.exports = LivePg;

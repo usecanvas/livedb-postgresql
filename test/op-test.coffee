@@ -49,3 +49,41 @@ describe 'LivePg (operations)', ->
             version.should.equal 3
             done()
 
+  describe '#getOps', ->
+    it 'returns an empty array if there are no ops in the range', (done) ->
+      @livePg.getOps 'coll', 'doc', 1, 2, (err, ops) ->
+        throw err if err
+        ops.should.eql []
+        done()
+
+    it 'returns the ops, noninclusively', (done) ->
+      async.waterfall [
+        ((cb) =>
+          @livePg.writeOp 'coll', 'doc', { v: 1 }, cb
+        ), ((_, cb) =>
+          @livePg.writeOp 'coll', 'doc', { v: 2 }, cb
+        ), ((_, cb) =>
+          @livePg.writeOp 'coll', 'doc', { v: 3 }, cb
+        ), ((_, cb) =>
+          @livePg.getOps 'coll', 'doc', 1, 3, cb
+        ), ((ops) ->
+          ops.should.eql([{ v: 1 }, { v: 2 }])
+          done()
+        )
+      ], (err) -> throw err
+
+    it 'returns the requested until the end if there is no end', (done) ->
+      async.waterfall [
+        ((cb) =>
+          @livePg.writeOp 'coll', 'doc', { v: 1 }, cb
+        ), ((_, cb) =>
+          @livePg.writeOp 'coll', 'doc', { v: 2 }, cb
+        ), ((_, cb) =>
+          @livePg.writeOp 'coll', 'doc', { v: 3 }, cb
+        ), ((_, cb) =>
+          @livePg.getOps 'coll', 'doc', 2, null, cb
+        ), ((ops) ->
+          ops.should.eql([{ v: 2 }, { v: 3 }])
+          done()
+        )
+      ], (err) -> throw err
