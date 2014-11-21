@@ -39,3 +39,30 @@ describe 'LivePg (snapshots)', ->
           throw err if err
           doc.should.eql v: 2
           done()
+
+  describe '#bulkGetSnapshot', ->
+    it 'returns all documents found', (done) ->
+      @livePg.writeSnapshot 'collA', 'docA', { v: 1 }, (err, doc) =>
+        throw err if err
+        @livePg.writeSnapshot 'collB', 'docB', { v: 2 }, (err, doc) =>
+          throw err if err
+          @livePg.bulkGetSnapshot { collA: ['docA'], collB: ['docB'] }, (err, results) =>
+            throw err if err
+            results.should.eql({
+              collA: { docA: { v: 1 } },
+              collB: { docB: { v: 2 } }
+            })
+            done()
+
+    it 'does not return nonexistent documents', (done) ->
+      @livePg.writeSnapshot 'collA', 'docA', { v: 1 }, (err, doc) =>
+        throw err if err
+        @livePg.writeSnapshot 'collB', 'docB', { v: 2 }, (err, doc) =>
+          throw err if err
+          @livePg.bulkGetSnapshot { collA: ['docA'], collB: ['docB', 'docC'] }, (err, results) =>
+            throw err if err
+            results.should.eql({
+              collA: { docA: { v: 1 } },
+              collB: { docB: { v: 2 } }
+            })
+            done()

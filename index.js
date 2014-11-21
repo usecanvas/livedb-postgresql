@@ -117,4 +117,67 @@ LivePg.prototype.writeSnapshot = function writeSnapshot(cName, docName, data, cb
   }
 };
 
+/**
+ * A callback called when getting snapshots in bulk.
+ *
+ * @callback LivePg~bulkGetSnapshotCallback
+ * @param {?Error} err an error
+ * @param {?Object} results the results
+ */
+/**
+ * Get specific documents from multiple collections.
+ *
+ * @method
+ * @param {Object} requests the requests documents
+ * @param {LivePg~bulkGetSnapshotCallback} cb a callback called with the results
+ */
+LivePg.prototype.bulkGetSnapshot = function bulkGetSnapshot(requests, cb) {
+  var collections = Object.keys(requests);
+
+  async.parallel(collections.map(function eachCollection(cName) {
+    var docNames = requests[cName];
+
+    return function getFromCollection(callback) {
+      this.fromCollection(cName, docNames, callback);
+    }.bind(this);
+  }.bind(this)), function onDone(err, results) {
+    if (err) return cb(err);
+    cb(null, results.reduce(function eachResult(obj, result, i) {
+      obj[collections[i]] = result;
+      return obj;
+    }, {}));
+  });
+};
+
+/**
+ * A callback called when getting snapshots for a given collection.
+ *
+ * @callback LivePg~fromCollectionCallback
+ * @private
+ * @param {?Error} err an error
+ * @param {?Object} results an set of results for the found documents
+ */
+/**
+ * Get specific documents from a given collection.
+ *
+ * @method
+ * @private
+ * @param {string} cName the collection name
+ * @param {Array} docNames the document names
+ * @param {LivePg~fromCollectionCallback} cb a callback called with results
+ */
+LivePg.prototype.fromCollection = function fromCollection(cName, docNames, cb) {
+  this.db(this.table)
+    .whereIn('name', docNames)
+    .andWhere({ collection: cName })
+    .select('name', 'data')
+    .exec(function onResult(err, results) {
+      if (err) return cb(err, null);
+      cb(null, results.reduce(function eachResult(obj, result) {
+        obj[result.name] = result.data;
+        return obj;
+      }, {}));
+    });
+};
+
 module.exports = LivePg;
