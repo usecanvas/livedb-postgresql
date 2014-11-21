@@ -36,7 +36,8 @@ LivePg.prototype.getSnapshot = function getSnapshot(cName, docName, cb) {
     .select('data')
     .limit(1)
     .exec(function onResult(err, rows) {
-      cb(err, rows.length ? rows[0].data : null);
+      if (err) return cb(err, null);
+      cb(null, rows.length ? rows[0].data : null);
     });
 };
 
@@ -61,7 +62,8 @@ LivePg.prototype.writeSnapshot = function writeSnapshot(cName, docName, data, cb
     .insert({ collection: cName, name: docName, data: data })
     .returning('data')
     .exec(function onResult(err, rows) {
-      cb(err, rows[0] || null);
+      if (err) return cb(err, null);
+      cb(null, rows[0]);
     });
 };
 
