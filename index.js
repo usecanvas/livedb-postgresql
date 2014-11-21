@@ -5,6 +5,10 @@ var fmt   = require('util').format;
 var knex  = require('knex');
 var pg    = require('pg');
 
+pg.on('end', function onPgEnd() {
+  LivePg.willClose = true;
+});
+
 /**
  * Get a livedb client for connecting to a PostgreSQL database.
  *
@@ -281,6 +285,40 @@ LivePg.prototype.getOps = function getOps(cName, docName, start, end, cb) {
         return row.data;
       }));
     });
+};
+
+/**
+ * Close the connection to the database.
+ *
+ * @method
+ * @param {LivePg~closeCallback} cb a callback called when the connection closes
+ */
+LivePg.prototype.close = function close(cb) {
+  LivePg.close(cb);
+};
+
+/**
+ * A callback called when the database connection has closed
+ *
+ * @callback LivePg~closeCallback
+ * @static
+ */
+/**
+ * Close the connection to the database.
+ * @method
+ * @static
+ * @param {LivePg~closeCallback} cb a callback called when the connection closes
+ */
+LivePg.close = function close(cb) {
+  if (this.willClose) {
+    cb();
+  } else {
+    pg.on('end', function onPgEnd() {
+      cb();
+    });
+
+    pg.end();
+  }
 };
 
 module.exports = LivePg;
