@@ -31,3 +31,11 @@ describe 'LivePg (snapshots)', ->
         throw err if err
         doc.should.eql v: 1
         done()
+
+    it 'updates the document if it exists', (done) ->
+      @livePg.writeSnapshot 'collection', 'name', { v: 1 }, (err, doc) =>
+        throw err if err
+        @livePg.writeSnapshot 'collection', 'name', { v: 2 }, (err, doc) =>
+          throw err if err
+          doc.should.eql v: 2
+          done()
