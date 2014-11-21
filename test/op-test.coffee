@@ -56,6 +56,22 @@ describe 'LivePg (operations)', ->
         ops.should.eql []
         done()
 
+    it 'does not return ops from other collections or docs', (done) ->
+      async.waterfall [
+        ((cb) =>
+          @livePg.writeOp 'collA', 'doc', { v: 1 }, cb
+        ), ((_, cb) =>
+          @livePg.writeOp 'collB', 'doc', { v: 1 }, cb
+        ), ((_, cb) =>
+          @livePg.writeOp 'collB', 'doc', { v: 2 }, cb
+        ), ((_, cb) =>
+          @livePg.getOps 'collB', 'doc', 1, null, cb
+        ), ((ops) ->
+          ops.should.eql([{ v: 1 }, { v: 2 }])
+          done()
+        )
+      ], (err) -> throw err
+
     it 'returns the ops, noninclusively', (done) ->
       async.waterfall [
         ((cb) =>

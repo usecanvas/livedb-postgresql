@@ -271,7 +271,9 @@ LivePg.prototype.getVersion = function getVersion(cName, docName, cb) {
  * @param {LivePg~getOpsCallback} cb a callback called with the ops
  */
 LivePg.prototype.getOps = function getOps(cName, docName, start, end, cb) {
-  var query = this.db(this.table).where('version', '>=', start);
+  var query = this.db(this.table)
+    .where('version', '>=', start)
+    .andWhere({ collection_name: cName, document_name: docName });
 
   if (typeof end === 'number') {
     query.andWhere('version', '<', end);
