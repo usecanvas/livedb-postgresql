@@ -36,7 +36,32 @@ LivePg.prototype.getSnapshot = function getSnapshot(cName, docName, cb) {
     .select('data')
     .limit(1)
     .exec(function onResult(err, rows) {
-      return err ? cb(err) : cb(null, rows[0] || null);
+      cb(err, rows.length ? rows[0].data : null);
+    });
+};
+
+/**
+ * A callback called when writing a document snapshot.
+ *
+ * @callback LivePg~writeSnapshotCallback
+ * @param {?Error} err an error
+ * @param {?Object} doc document data
+ */
+/**
+ * Write a document snapshot to a given collection.
+ *
+ * @method
+ * @param {string} cName the collection name
+ * @param {string} docName the document name
+ * @param {Object} data the document data
+ * @param {LivePg~writeSnapshotCallback} cb a callback called with the document
+ */
+LivePg.prototype.writeSnapshot = function writeSnapshot(cName, docName, data, cb) {
+  this.db(this.table)
+    .insert({ collection: cName, name: docName, data: data })
+    .returning('data')
+    .exec(function onResult(err, rows) {
+      cb(err, rows[0] || null);
     });
 };
 
