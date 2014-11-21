@@ -1,4 +1,3 @@
-
 LivePg = require '..'
 should = require 'should'
 

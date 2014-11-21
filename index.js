@@ -19,6 +19,11 @@ function LivePg(conn, table) {
   this.table = table;
 }
 
+/*
+ * SNAPSHOT API
+ * ============
+ */
+
 /**
  * A callback called when getting a document snapshot.
  *
@@ -178,6 +183,69 @@ LivePg.prototype.fromCollection = function fromCollection(cName, docNames, cb) {
         obj[result.name] = result.data;
         return obj;
       }, {}));
+    });
+};
+
+/*
+ * OPERATION API
+ * =============
+ */
+
+/**
+ * A callback called when writing an operation
+ *
+ * @callback LivePg~writeOpCallback
+ * @param {?Error} err an error
+ * @param {?Object} op the operation data
+ */
+/**
+ * Write an operation.
+ *
+ * @method
+ * @param {string} cName a collection name
+ * @param {string} docName a document name
+ * @param {Object} opData the operation data
+ * @param {LivePg~writeOpCallback} cb a callback called with the op data
+ */
+LivePg.prototype.writeOp = function writeOp(cName, docName, opData, cb) {
+  this.db(this.table)
+    .insert({
+      collection_name: cName,
+      document_name  : docName,
+      version        : opData.v,
+      data           : opData
+    })
+    .returning('data')
+    .exec(function onResult(err, rows) {
+      if (err) return cb(err, null);
+      cb(null, rows.length ? rows[0] : null);
+    });
+};
+
+/**
+ * A callback called with the next version of the document
+ *
+ * @callback LivePg~getVersionCallback
+ * @param {?Error} err an error
+ * @param {?number} version the next document version
+ */
+/**
+ * Get the next document version.
+ *
+ * @method
+ * @param {string} cName a collection name
+ * @param {string} docName a document name
+ * @param {LivePg~getVersionCallback} cb a callback called with the next version
+ */
+LivePg.prototype.getVersion = function getVersion(cName, docName, cb) {
+  this.db(this.table)
+    .where({ collection_name: cName, document_name: docName })
+    .select('version')
+    .orderBy('version', 'desc')
+    .limit(1)
+    .exec(function onResult(err, rows) {
+      if (err) return cb(err);
+      cb(null, rows.length ? parseInt(rows[0].version, 10) + 1 : 1);
     });
 };
 
