@@ -267,7 +267,7 @@ LivePg.prototype.getVersion = function getVersion(cName, docName, cb) {
  * @param {string} cName a collection name
  * @param {string} docName a document name
  * @param {number} start the start version
- * @param {end} end the end version
+ * @param {?end} end the end version
  * @param {LivePg~getOpsCallback} cb a callback called with the ops
  */
 LivePg.prototype.getOps = function getOps(cName, docName, start, end, cb) {
