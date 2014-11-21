@@ -77,6 +77,7 @@ LivePg.prototype.writeSnapshot = function writeSnapshot(cName, docName, data, cb
     upsert,
     commit
   ], function onDone(err) {
+    if (done) done();
     if (err) return cb(err);
     cb(null, data);
   });
