@@ -63,6 +63,8 @@ describe 'LivePg (operations)', ->
         ((cb) =>
           @livePg.writeOp 'collA', 'doc', { v: 1 }, cb
         ), ((_, cb) =>
+          @livePg.writeOp 'collB', 'docA', { v: 1 }, cb
+        ), ((_, cb) =>
           @livePg.writeOp 'collB', 'doc', { v: 1 }, cb
         ), ((_, cb) =>
           @livePg.writeOp 'collB', 'doc', { v: 2 }, cb
