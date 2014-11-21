@@ -6,6 +6,8 @@ livedb query interface.
 **Please exercise caution** when using this package. It's *mostly* but not
 thoroughly tested.
 
+See [schema.sql][schema] for an example database schema that works with this package.
+
 ## Install
 
 ```sh
@@ -35,3 +37,4 @@ var liveClient = livedb.client({ snapshotDb: snapshotDb, driver: driver });
 ```
 
 [livedb]: https://github.com/share/livedb
+[schema]: https://github.com/slowink/livedb-postgresql/blob/master/schema.sql
