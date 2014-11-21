@@ -1,0 +1,34 @@
+{
+  "name": "livedb-postgresql",
+  "version": "0.0.0",
+  "description": "PostgreSQL adapter for livedb",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --compilers coffee:coffee-script/register"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/slowink/livedb-postgresql"
+  },
+  "keywords": [
+    "livedb",
+    "sharejs",
+    "postgresql",
+    "postgres"
+  ],
+  "author": "Jonathan Clem",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/slowink/livedb-postgresql/issues"
+  },
+  "homepage": "https://github.com/slowink/livedb-postgresql",
+  "devDependencies": {
+    "coffee-script": "^1.8.0",
+    "mocha": "^2.0.1",
+    "should": "^4.3.0"
+  },
+  "dependencies": {
+    "knex": "^0.7.3",
+    "pg": "^4.0.0"
+  }
+}
