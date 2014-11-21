@@ -305,6 +305,7 @@ LivePg.prototype.close = function close(cb) {
  */
 /**
  * Close the connection to the database.
+ *
  * @method
  * @static
  * @param {LivePg~closeCallback} cb a callback called when the connection closes
