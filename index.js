@@ -245,7 +245,7 @@ LivePg.prototype.getVersion = function getVersion(cName, docName, cb) {
     .limit(1)
     .exec(function onResult(err, rows) {
       if (err) return cb(err);
-      cb(null, rows.length ? parseInt(rows[0].version, 10) + 1 : 1);
+      cb(null, rows.length ? parseInt(rows[0].version, 10) + 1 : 0);
     });
 };
 

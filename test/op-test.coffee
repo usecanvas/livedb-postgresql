@@ -36,7 +36,7 @@ describe 'LivePg (operations)', ->
     it 'returns 1 if there are no ops', (done) ->
       @livePg.getVersion 'coll', 'doc', (err, version) ->
         throw err if err
-        version.should.equal 1
+        version.should.equal 0
         done()
 
     it 'returns the next version of the document if there are ops', (done) ->
