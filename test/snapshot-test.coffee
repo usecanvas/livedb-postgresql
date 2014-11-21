@@ -1,4 +1,5 @@
 LivePg = require '..'
+async  = require 'async'
 should = require 'should'
 
 describe 'LivePg (snapshots)', ->
@@ -17,12 +18,15 @@ describe 'LivePg (snapshots)', ->
         done()
 
     it 'returns a document when it exists', (done) ->
-      @livePg.writeSnapshot 'collection', 'name', { v: 1 }, (err, doc) =>
-        throw err if err
-        @livePg.getSnapshot 'collection', 'name', (err, doc) =>
-          throw err if err
+      async.waterfall [
+        ((cb) =>
+          @livePg.writeSnapshot 'collection', 'name', { v: 1 }, cb
+        ), ((_, cb) =>
+          @livePg.getSnapshot 'collection', 'name', cb
+        ), (doc) ->
           doc.should.eql v: 1
           done()
+      ], (err) -> throw err
 
   describe '#writeSnapshot', ->
     it 'inserts the document if it does not exist', (done) ->
@@ -32,36 +36,45 @@ describe 'LivePg (snapshots)', ->
         done()
 
     it 'updates the document if it exists', (done) ->
-      @livePg.writeSnapshot 'collection', 'name', { v: 1 }, (err, doc) =>
-        throw err if err
-        @livePg.writeSnapshot 'collection', 'name', { v: 2 }, (err, doc) =>
-          throw err if err
+      async.waterfall [
+        ((cb) =>
+          @livePg.writeSnapshot 'collection', 'name', { v: 1 }, cb
+        ), ((_, cb) =>
+          @livePg.writeSnapshot 'collection', 'name', { v: 2 }, cb
+        ), (doc) ->
           doc.should.eql v: 2
           done()
+      ], (err) -> throw err
 
   describe '#bulkGetSnapshot', ->
     it 'returns all documents found', (done) ->
-      @livePg.writeSnapshot 'collA', 'docA', { v: 1 }, (err, doc) =>
-        throw err if err
-        @livePg.writeSnapshot 'collB', 'docB', { v: 2 }, (err, doc) =>
-          throw err if err
-          @livePg.bulkGetSnapshot { collA: ['docA'], collB: ['docB'] }, (err, results) =>
-            throw err if err
-            results.should.eql({
-              collA: { docA: { v: 1 } },
-              collB: { docB: { v: 2 } }
-            })
-            done()
+      async.waterfall [
+        ((cb) =>
+          @livePg.writeSnapshot 'collA', 'docA', { v: 1 }, cb
+        ), ((_, cb) =>
+          @livePg.writeSnapshot 'collB', 'docB', { v: 2 }, cb
+        ), ((_, cb) =>
+          @livePg.bulkGetSnapshot { collA: ['docA'], collB: ['docB'] }, cb
+        ), (results) ->
+          results.should.eql({
+            collA: { docA: { v: 1 } },
+            collB: { docB: { v: 2 } }
+          })
+          done()
+      ], -> throw err
 
     it 'does not return nonexistent documents', (done) ->
-      @livePg.writeSnapshot 'collA', 'docA', { v: 1 }, (err, doc) =>
-        throw err if err
-        @livePg.writeSnapshot 'collB', 'docB', { v: 2 }, (err, doc) =>
-          throw err if err
-          @livePg.bulkGetSnapshot { collA: ['docA'], collB: ['docB', 'docC'] }, (err, results) =>
-            throw err if err
-            results.should.eql({
-              collA: { docA: { v: 1 } },
-              collB: { docB: { v: 2 } }
-            })
-            done()
+      async.waterfall [
+        ((cb) =>
+          @livePg.writeSnapshot 'collA', 'docA', { v: 1 }, cb
+        ), ((_, cb) =>
+          @livePg.writeSnapshot 'collB', 'docB', { v: 2 }, cb
+        ), ((_, cb) =>
+          @livePg.bulkGetSnapshot { collA: ['docA'], collB: ['docB', 'docC'] }, cb
+        ), (results) ->
+          results.should.eql({
+            collA: { docA: { v: 1 } },
+            collB: { docB: { v: 2 } }
+          })
+          done()
+      ], (err) -> throw err

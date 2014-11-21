@@ -13,8 +13,7 @@ describe 'LivePg (operations)', ->
       ), ((cb) =>
         @docPg.db.raw('TRUNCATE TABLE documents').exec cb
       )
-    ], =>
-      @docPg.writeSnapshot 'coll', 'doc', { v: 1 }, done
+    ], => @docPg.writeSnapshot 'coll', 'doc', { v: 1 }, done
 
   afterEach (done) ->
     async.parallel [
@@ -40,14 +39,17 @@ describe 'LivePg (operations)', ->
         done()
 
     it 'returns the next version of the document if there are ops', (done) ->
-      @livePg.writeOp 'coll', 'doc', { v: 1 }, (err, res) =>
-        throw err if err
-        @livePg.writeOp 'coll', 'doc', { v: 2 }, (err, res) =>
-          throw err if err
-          @livePg.getVersion 'coll', 'doc', (err, version) ->
-            throw err if err
-            version.should.equal 3
-            done()
+      async.waterfall [
+        ((cb) =>
+          @livePg.writeOp 'coll', 'doc', { v: 1 }, cb
+        ), ((_, cb) =>
+          @livePg.writeOp 'coll', 'doc', { v: 2 }, cb
+        ), ((_, cb) =>
+          @livePg.getVersion 'coll', 'doc', cb
+        ), (version) ->
+          version.should.eql 3
+          done()
+      ], (err) -> throw err
 
   describe '#getOps', ->
     it 'returns an empty array if there are no ops in the range', (done) ->
