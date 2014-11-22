@@ -52,16 +52,20 @@ describe 'LivePg (snapshots)', ->
         ((cb) =>
           @livePg.writeSnapshot 'collA', 'docA', { v: 1 }, cb
         ), ((_, cb) =>
-          @livePg.writeSnapshot 'collB', 'docB', { v: 2 }, cb
+          @livePg.writeSnapshot 'collA', 'docB', { v: 2 }, cb
         ), ((_, cb) =>
-          @livePg.bulkGetSnapshot { collA: ['docA'], collB: ['docB'] }, cb
+          @livePg.writeSnapshot 'collB', 'docC', { v: 2 }, cb
+        ), ((_, cb) =>
+          @livePg.writeSnapshot 'collB', 'docD', { v: 2 }, cb
+        ), ((_, cb) =>
+          @livePg.bulkGetSnapshot { collA: ['docA'], collB: ['docC', 'docD'] }, cb
         ), (results) ->
           results.should.eql({
             collA: { docA: { v: 1 } },
-            collB: { docB: { v: 2 } }
+            collB: { docC: { v: 2 }, docD: { v: 2 } }
           })
           done()
-      ], -> throw err
+      ], (err) -> throw err
 
     it 'does not return nonexistent documents', (done) ->
       async.waterfall [

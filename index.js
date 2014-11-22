@@ -143,51 +143,22 @@ LivePg.prototype.writeSnapshot = function writeSnapshot(cName, docName, data, cb
  */
 LivePg.prototype.bulkGetSnapshot = function bulkGetSnapshot(requests, cb) {
   var collections = Object.keys(requests);
+  var query       = this.db(this.table).select('collection', 'name', 'data');
 
-  async.parallel(collections.map(function eachCollection(cName) {
-    var docNames = requests[cName];
+  collections.forEach(function eachCName(cName) {
+    query
+      .orWhereIn('name', requests[cName])
+      .andWhere({ collection: cName });
+  });
 
-    return function getFromCollection(callback) {
-      this.fromCollection(cName, docNames, callback);
-    }.bind(this);
-  }.bind(this)), function onDone(err, results) {
-    if (err) return cb(err);
-    cb(null, results.reduce(function eachResult(obj, result, i) {
-      obj[collections[i]] = result;
+  query.exec(function onDone(err, results) {
+    if (err) return cb(err, null);
+    cb(null, results.reduce(function eachResult(obj, result) {
+      obj[result.collection] = obj[result.collection] || {};
+      obj[result.collection][result.name] = result.data;
       return obj;
     }, {}));
   });
-};
-
-/**
- * A callback called when getting snapshots for a given collection.
- *
- * @callback LivePg~fromCollectionCallback
- * @private
- * @param {?Error} err an error
- * @param {?Object} results an set of results for the found documents
- */
-/**
- * Get specific documents from a given collection.
- *
- * @method
- * @private
- * @param {string} cName the collection name
- * @param {Array} docNames the document names
- * @param {LivePg~fromCollectionCallback} cb a callback called with results
- */
-LivePg.prototype.fromCollection = function fromCollection(cName, docNames, cb) {
-  this.db(this.table)
-    .whereIn('name', docNames)
-    .andWhere({ collection: cName })
-    .select('name', 'data')
-    .exec(function onResult(err, results) {
-      if (err) return cb(err, null);
-      cb(null, results.reduce(function eachResult(obj, result) {
-        obj[result.name] = result.data;
-        return obj;
-      }, {}));
-    });
 };
 
 /*
