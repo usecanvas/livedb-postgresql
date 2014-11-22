@@ -67,6 +67,12 @@ describe 'LivePg (snapshots)', ->
           done()
       ], (err) -> throw err
 
+    it 'returns empty objects for collections with no documents found', (done) ->
+      @livePg.bulkGetSnapshot { coll: ['doc'] }, (err, results) ->
+        throw err if err
+        results.should.eql { coll: {} }
+        done()
+
     it 'does not return nonexistent documents', (done) ->
       async.waterfall [
         ((cb) =>

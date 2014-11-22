@@ -153,11 +153,19 @@ LivePg.prototype.bulkGetSnapshot = function bulkGetSnapshot(requests, cb) {
 
   query.exec(function onDone(err, results) {
     if (err) return cb(err, null);
-    cb(null, results.reduce(function eachResult(obj, result) {
+
+    results = results.reduce(function eachResult(obj, result) {
       obj[result.collection] = obj[result.collection] || {};
       obj[result.collection][result.name] = result.data;
       return obj;
-    }, {}));
+    }, {});
+
+    // Add collections with no documents found back to the results
+    for (var i = 0, len = collections.length; i < len; i++) {
+      if (!results[collections[i]]) results[collections[i]] = {};
+    }
+
+    cb(null, results);
   });
 };
 
