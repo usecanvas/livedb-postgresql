@@ -287,10 +287,7 @@ LivePg.close = function close(cb) {
   if (this.willClose) {
     cb();
   } else {
-    pg.on('end', function onPgEnd() {
-      cb();
-    });
-
+    pg.once('end', cb);
     pg.end();
   }
 };
