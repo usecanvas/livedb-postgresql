@@ -87,7 +87,7 @@ LivePg.prototype.writeSnapshot = function writeSnapshot(cName, docName, data, cb
     commit
   ], function onDone(err) {
     if (done) done();
-    if (err) return cb(err);
+    if (err) return cb(err, null);
     cb(null, data);
   });
 
@@ -108,7 +108,7 @@ LivePg.prototype.writeSnapshot = function writeSnapshot(cName, docName, data, cb
   }
 
   function upsert(res, callback) {
-    var _table   = client.escapeIdentifier(table);
+    var _table = client.escapeIdentifier(table);
 
     var update = fmt('UPDATE %s SET data = $1 ' +
       'WHERE collection = $2 AND name = $3', _table);
@@ -222,7 +222,7 @@ LivePg.prototype.writeOp = function writeOp(cName, docName, opData, cb) {
     .returning('data')
     .exec(function onResult(err, rows) {
       if (err) return cb(err, null);
-      cb(null, rows.length ? rows[0] : null);
+      cb(null, rows[0]);
     });
 };
 
@@ -248,7 +248,7 @@ LivePg.prototype.getVersion = function getVersion(cName, docName, cb) {
     .orderBy('version', 'desc')
     .limit(1)
     .exec(function onResult(err, rows) {
-      if (err) return cb(err);
+      if (err) return cb(err, null);
       cb(null, rows.length ? parseInt(rows[0].version, 10) + 1 : 0);
     });
 };
@@ -282,7 +282,7 @@ LivePg.prototype.getOps = function getOps(cName, docName, start, end, cb) {
   query.select('data')
     .orderBy('version', 'asc')
     .exec(function onResult(err, rows) {
-      if (err) return cb(err);
+      if (err) return cb(err, null);
       cb(null, rows.map(function eachRow(row) {
         return row.data;
       }));
