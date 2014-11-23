@@ -79,7 +79,7 @@ var liveClient = livedb.client({ snapshotDb: snapshotDb, driver: driver });
 
 ## Testing
 
-After creating database tables such as the ones in [schema.sql][schema]:
+After creating database tables:
 
 ```sh
 PG_URL=postgres://localhost:5432/livedb-postgresql_test npm test
