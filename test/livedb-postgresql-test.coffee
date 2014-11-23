@@ -4,6 +4,8 @@ pg     = require 'pg'
 should = require 'should'
 sinon  = require 'sinon'
 
+require './test-helper'
+
 describe 'LivePg', ->
   beforeEach ->
     @livePg = new LivePg(process.env.PG_URL, 'documents')

@@ -2,6 +2,8 @@ LivePg = require '..'
 async  = require 'async'
 should = require 'should'
 
+require './test-helper'
+
 describe 'LivePg (snapshots)', ->
   beforeEach (done) ->
     @livePg = new LivePg(process.env.PG_URL, 'documents')
