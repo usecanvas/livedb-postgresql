@@ -14,6 +14,52 @@ See [schema.sql][schema] for an example database schema that works with this pac
 npm install --save livedb-postgresql
 ```
 
+## Schema
+
+### Requirements
+
+livedb-postgresql has relatively relaxed requirements for the database it connects to. The table names can be anything, as they're set when creating an instance of livedb-postgresql.
+
+#### Snapshots Table
+
+| Column Name | Type |
+|-------------|------|
+| collection  | text |
+| name        | text |
+| data        | json |
+
+#### Operations Table
+
+| Column Name     | Type   |
+|-----------------|--------|
+| collection_name | text   |
+| document_name   | text   |
+| version         | bigint |
+| data            | json   |
+
+### Example
+
+Here is an example SQL statement that will work with livedb-postgresql:
+
+```sql
+CREATE TABLE documents(
+  collection text NOT NULL,
+  name text NOT NULL,
+  data json NOT NULL
+);
+
+CREATE UNIQUE INDEX documents_collection_name ON documents(collection, name);
+
+CREATE TABLE operations(
+  collection_name text NOT NULL,
+  document_name text NOT NULL,
+  version bigint NOT NULL,
+  data json NOT NULL
+);
+
+CREATE UNIQUE INDEX operations_cname_docname_version ON operations(collection_name, document_name, version);
+```
+
 ## Usage
 
 ```javascript
