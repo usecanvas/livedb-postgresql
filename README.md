@@ -86,4 +86,3 @@ PG_URL=postgres://localhost:5432/livedb-postgresql_test npm test
 ```
 
 [livedb]: https://github.com/share/livedb
-[schema]: https://github.com/slowink/livedb-postgresql/blob/master/schema.sql
