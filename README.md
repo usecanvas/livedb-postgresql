@@ -3,11 +3,6 @@
 This is a PostgreSQL adapter for [livedb][livedb]. It does not yet implement the
 livedb query interface.
 
-**Please exercise caution** when using this package. It's *mostly* but not
-thoroughly tested.
-
-See [schema.sql][schema] for an example database schema that works with this package.
-
 ## Install
 
 ```sh
