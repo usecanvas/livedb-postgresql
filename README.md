@@ -64,14 +64,14 @@ var redis  = require('redis');
 
 // Redis clients
 var redisURL  = require('url').parse(process.env.REDIS_URL);
-var redisPass = url.auth.split(':')[1];
-var redis1    = redis.createClient(url.port, url.hostname, { auth_pass: redisPass });
-var redis2    = redis.createClient(url.port, url.hostname, { auth_pass: redisPass });
+var redisPass = redisURL.auth.split(':')[1];
+var redis1    = redis.createClient(redisURL.port, redisURL.hostname, { auth_pass: redisPass });
+var redis2    = redis.createClient(redisURL.port, redisURL.hostname, { auth_pass: redisPass });
 
 // Postgres clients
 var connString = process.env.DATABASE_URL;
 var snapshotDb = new LivePg(connString, 'documents');  // "documents" is a table
-var opLog      = new LivePg(connString, 'oplog');
+var opLog      = new LivePg(connString, 'operations');
 
 var driver     = livedb.redisDriver(opLog, redis1, redis2);
 var liveClient = livedb.client({ snapshotDb: snapshotDb, driver: driver });
