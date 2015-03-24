@@ -102,19 +102,17 @@ LivePg.prototype.writeSnapshot = function writeSnapshot(cName, docName, data, cb
   }
 
   function lock(res, callback) {
-    var _table = client.escapeIdentifier(table);
-    var query  = fmt('LOCK TABLE %s IN SHARE ROW EXCLUSIVE MODE;', _table);
+    var query  = fmt('LOCK TABLE %s IN SHARE ROW EXCLUSIVE MODE;', table);
     client.query(query, callback);
   }
 
   function upsert(res, callback) {
-    var _table = client.escapeIdentifier(table);
 
     var update = fmt('UPDATE %s SET data = $1 ' +
-      'WHERE collection = $2 AND name = $3', _table);
+      'WHERE collection = $2 AND name = $3', table);
 
     var insert = fmt('INSERT INTO %s (collection, name, data) ' +
-      'SELECT $2, $3, $1', _table);
+      'SELECT $2, $3, $1', table);
 
     var query = fmt('WITH upsert AS (%s RETURNING *) %s ' +
       'WHERE NOT EXISTS (SELECT * FROM upsert);', update, insert);
