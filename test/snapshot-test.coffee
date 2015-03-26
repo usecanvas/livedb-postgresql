@@ -1,23 +1,27 @@
+
 LivePg = require '..'
 async  = require 'async'
 should = require 'should'
 
 require './test-helper'
 
+opTable = 'doc.operations'
+docTable = 'doc.documents'
+
 describe 'LivePg (snapshots)', ->
 
   before (done) ->
-    @livePg = new LivePg(process.env.PG_URL, 'documents')
+    @livePg = new LivePg(process.env.PG_URL, docTable)
     done()
 
   after (done) ->
     @livePg.close(done)
 
   beforeEach (done) ->
-    @livePg.db.raw('TRUNCATE TABLE documents').exec done
+    @livePg.db.raw("TRUNCATE TABLE #{opTable}").exec done
 
   afterEach (done) ->
-    @livePg.db.raw('TRUNCATE TABLE documents').exec done
+    @livePg.db.raw("TRUNCATE TABLE #{docTable}").exec done
 
   describe '#getSnapshot', ->
     it 'returns null when the document does not exist', (done) ->

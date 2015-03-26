@@ -7,6 +7,9 @@ LivePg = require '..'
 
 require './test-helper'
 
+opTable = 'doc.operations'
+docTable = 'doc.documents'
+
 counter = 1
 
 describe 'snapshot db', ->
@@ -14,7 +17,7 @@ describe 'snapshot db', ->
   before (done) ->
     @docName = "doc #{counter++}"
     @cName = 'coll'
-    @docPg = new LivePg(process.env.PG_URL, 'documents')
+    @docPg = new LivePg(process.env.PG_URL, docTable)
     done();
 
   after (done) ->
@@ -22,12 +25,12 @@ describe 'snapshot db', ->
 
   beforeEach (done) ->
 
-    @docPg.db.raw('TRUNCATE TABLE documents').exec () ->
+    @docPg.db.raw("TRUNCATE TABLE #{docTable}").exec () ->
       done()
 
   afterEach (done) ->
 
-    @docPg.db.raw('TRUNCATE TABLE documents').exec () ->
+    @docPg.db.raw("TRUNCATE TABLE #{docTable}").exec () ->
       done()
 
   it 'returns null when you getSnapshot on a nonexistant doc name', (done) ->

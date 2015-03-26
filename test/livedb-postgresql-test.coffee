@@ -1,3 +1,4 @@
+
 LivePg = require '..'
 async  = require 'async'
 pg     = require 'pg'
@@ -6,9 +7,12 @@ sinon  = require 'sinon'
 
 require './test-helper'
 
+opTable = 'doc.operations'
+docTable = 'doc.documents'
+
 describe 'LivePg', ->
   beforeEach ->
-    @livePg = new LivePg(process.env.PG_URL, 'documents')
+    @livePg = new LivePg(process.env.PG_URL, docTable)
 
   describe '#close', ->
     beforeEach ->

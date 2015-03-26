@@ -10,6 +10,9 @@ LivePg = require '..'
 
 require './test-helper'
 
+opTable = 'doc.operations'
+docTable = 'doc.documents'
+
 # Wait for the returned function to be called a given number of times, then call the
 # callback.
 makePassPart = (n, callback) ->
@@ -28,20 +31,18 @@ describe 'oplog', ->
   before (done) ->
     @docName = "doc #{counter++}"
     @cName = 'coll'
-    @opPg = new LivePg(process.env.PG_URL, 'operations')
+    @opPg = new LivePg(process.env.PG_URL, opTable)
     done();
 
   after (done) ->
     @opPg.close(done)
 
   beforeEach (done) ->
-    @opPg.db.raw('TRUNCATE TABLE operations').exec () ->
+    @opPg.db.raw("TRUNCATE TABLE #{opTable}").exec () ->
       done()
 
   afterEach (done) ->
-    @opPg = new LivePg(process.env.PG_URL, 'operations')
-
-    @opPg.db.raw('TRUNCATE TABLE operations').exec () ->
+    @opPg.db.raw("TRUNCATE TABLE #{opTable}").exec () ->
       done()
 
   it 'returns 0 when getVersion is called on a new document', (done) ->
