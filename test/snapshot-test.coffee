@@ -5,8 +5,15 @@ should = require 'should'
 require './test-helper'
 
 describe 'LivePg (snapshots)', ->
-  beforeEach (done) ->
+
+  before (done) ->
     @livePg = new LivePg(process.env.PG_URL, 'documents')
+    done()
+
+  after (done) ->
+    @livePg.close(done)
+
+  beforeEach (done) ->
     @livePg.db.raw('TRUNCATE TABLE documents').exec done
 
   afterEach (done) ->

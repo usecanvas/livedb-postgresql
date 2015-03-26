@@ -11,17 +11,21 @@ counter = 1
 
 describe 'snapshot db', ->
 
-  beforeEach (done) ->
+  before (done) ->
     @docName = "doc #{counter++}"
     @cName = 'coll'
-
     @docPg = new LivePg(process.env.PG_URL, 'documents')
+    done();
+
+  after (done) ->
+    @docPg.close(done)
+
+  beforeEach (done) ->
 
     @docPg.db.raw('TRUNCATE TABLE documents').exec () ->
       done()
 
   afterEach (done) ->
-    @docPg = new LivePg(process.env.PG_URL, 'documents')
 
     @docPg.db.raw('TRUNCATE TABLE documents').exec () ->
       done()

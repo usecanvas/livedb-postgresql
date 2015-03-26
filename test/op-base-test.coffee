@@ -24,13 +24,17 @@ makePassPart = (n, callback) ->
 counter = 1
 
 describe 'oplog', ->
-  beforeEach (done) ->
 
-    @docName = 'doc'
+  before (done) ->
+    @docName = "doc #{counter++}"
     @cName = 'coll'
-
     @opPg = new LivePg(process.env.PG_URL, 'operations')
+    done();
 
+  after (done) ->
+    @opPg.close(done)
+
+  beforeEach (done) ->
     @opPg.db.raw('TRUNCATE TABLE operations').exec () ->
       done()
 

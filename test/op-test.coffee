@@ -5,9 +5,19 @@ should = require 'should'
 require './test-helper'
 
 describe 'LivePg (operations)', ->
-  beforeEach (done) ->
+
+  before (done) ->
     @livePg = new LivePg(process.env.PG_URL, 'operations')
     @docPg  = new LivePg(process.env.PG_URL, 'documents')
+    done();
+
+  after (done) ->
+    async.parallel [
+      @livePg.close,
+      @docPg.close
+    ], done
+
+  beforeEach (done) ->
 
     async.parallel [
       ((cb) =>
