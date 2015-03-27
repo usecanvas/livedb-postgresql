@@ -1,6 +1,5 @@
 "use strict";
 
-var fmt   = require("util").format;
 var async = require("async");
 var squel = require("squel");
 var pg    = require("pg");
@@ -18,8 +17,10 @@ pg.on("end", function onPgEnd() {
  * @param {string} table a database table name
  */
 function LivePg(conn, table) {
-  this.conn  = conn;
-  this.table = table;
+  this.conn     = conn;
+  this.table    = table;
+  this.docTable = "doc.documents";
+  this.opTable  = "doc.operations";
 }
 
 /*
@@ -42,15 +43,18 @@ function LivePg(conn, table) {
  * @param {string} docName the document name
  * @param {LivePg~getSnapshotCallback} cb a callback called with the document
  */
-LivePg.prototype.getSnapshot = function getSnapshot(cName, docName, cb) {
+LivePg.prototype.getSnapshot = function getSnapshot (cName, docName, cb) {
+
   var self = this;
+  var qry = squel.select({ numberedParameters: true })
+    .from(this.docTable)
+    .field("data")
+    .where("collection = ?", cName)
+    .where("name = ?", docName)
+    .limit(1);
 
   var execute = function (callback) {
-    self._query({
-      name: "get_snapshot",
-      text: "SELECT data FROM doc.documents WHERE collection = $1 AND name = $2 LIMIT 1",
-      values: [cName, docName]
-    }, callback);
+    self._query(qry.toParam(), callback);
   };
 
   var result = function (dbResult, callback) {
@@ -84,7 +88,7 @@ LivePg.prototype.getSnapshot = function getSnapshot(cName, docName, cb) {
  * @param {Object} data the document data
  * @param {LivePg~writeSnapshotCallback} cb a callback called with the document
  */
-LivePg.prototype.writeSnapshot = function writeSnapshot(cName, docName, data, cb) {
+LivePg.prototype.writeSnapshot = function writeSnapshot (cName, docName, data, cb) {
   var self = this;
 
   var execute = function (callback) {
@@ -117,7 +121,7 @@ LivePg.prototype.writeSnapshot = function writeSnapshot(cName, docName, data, cb
  * @param {Object} requests the requests documents
  * @param {LivePg~bulkGetSnapshotCallback} cb a callback called with the results
  */
-LivePg.prototype.bulkGetSnapshot = function bulkGetSnapshot(requests, cb) {
+LivePg.prototype.bulkGetSnapshot = function bulkGetSnapshot (requests, cb) {
 
   var collections = Object.keys(requests);
   var self = this;
@@ -126,7 +130,7 @@ LivePg.prototype.bulkGetSnapshot = function bulkGetSnapshot(requests, cb) {
     .field("collection")
     .field("name")
     .field("data")
-    .from("doc.documents");
+    .from(this.docTable);
 
   var expr = squel.expr().or_begin();
   Object.keys(requests).forEach(function (cName) {
@@ -142,7 +146,7 @@ LivePg.prototype.bulkGetSnapshot = function bulkGetSnapshot(requests, cb) {
   var result = function (dbResult, callback) {
     var results = dbResult.rows;
 
-    results = results.reduce(function eachResult(obj, result) {
+    results = results.reduce(function eachResult (obj, result) {
       obj[result.collection] = obj[result.collection] || {};
       obj[result.collection][result.name] = result.data;
       return obj;
@@ -180,7 +184,7 @@ LivePg.prototype.bulkGetSnapshot = function bulkGetSnapshot(requests, cb) {
  * @param {Object} opData the operation data
  * @param {LivePg~writeOpCallback} cb a callback called with the op data
  */
-LivePg.prototype.writeOp = function writeOp(cName, docName, opData, cb) {
+LivePg.prototype.writeOp = function writeOp (cName, docName, opData, cb) {
   var self = this;
 
   var execute = function (callback) {
@@ -214,15 +218,19 @@ LivePg.prototype.writeOp = function writeOp(cName, docName, opData, cb) {
  * @param {string} docName a document name
  * @param {LivePg~getVersionCallback} cb a callback called with the next version
  */
-LivePg.prototype.getVersion = function getVersion(cName, docName, cb) {
+LivePg.prototype.getVersion = function getVersion (cName, docName, cb) {
+
   var self = this;
+  var qry = squel.select({ numberedParameters: true })
+    .from(this.opTable)
+    .field("version")
+    .where("collection_name = ?", cName)
+    .where("document_name = ?", docName)
+    .order("version", false)
+    .limit(1);
 
   var execute = function (callback) {
-    self._query({
-      name: "get_version",
-      text: "SELECT version FROM doc.operations WHERE collection_name = $1 AND document_name = $2 ORDER BY version DESC LIMIT 1",
-      values: [cName, docName]
-    }, callback);
+    self._query(qry.toParam(), callback);
   };
 
   var result = function (dbResult, callback) {
@@ -253,26 +261,23 @@ LivePg.prototype.getVersion = function getVersion(cName, docName, cb) {
  * @param {?end} end the end version
  * @param {LivePg~getOpsCallback} cb a callback called with the ops
  */
-LivePg.prototype.getOps = function getOps(cName, docName, start, end, cb) {
+LivePg.prototype.getOps = function getOps (cName, docName, start, end, cb) {
+
   var self = this;
+  var qry = squel.select({ numberedParameters: true })
+    .from(this.opTable)
+    .field("data")
+    .where("collection_name = ?", cName)
+    .where("document_name = ?", docName)
+    .where("version >= ?", start)
+    .order("version");
 
   var execute = function (callback) {
-    var name    = "get_ops";
-    var baseQry = "SELECT data FROM doc.operations WHERE version >= $1 AND collection_name = $2 AND document_name = $3%s ORDER BY version ASC";
-    var values  = [start, cName, docName];
-    var endQry  = "";
-
     if ("number" === typeof end) {
-      name   = "get_ops_end";
-      endQry = " AND version < $4";
-      values = [start, cName, docName, end];
+      qry.where("version < ?", end);
     }
 
-    self._query({
-      name:   name,
-      text:   fmt(baseQry, endQry),
-      values: values
-    }, callback);
+    self._query(qry.toParam(), callback);
   };
 
   var result = function (dbResult, callback) {
