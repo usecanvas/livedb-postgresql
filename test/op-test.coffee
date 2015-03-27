@@ -10,32 +10,27 @@ docTable = 'doc.documents'
 
 describe 'LivePg (operations)', ->
 
-  before (done) ->
-    @livePg = new LivePg(process.env.PG_URL, opTable)
-    @docPg  = new LivePg(process.env.PG_URL, docTable)
-    done();
+  before () ->
+    @livePg = new LivePg(process.env.PG_URL)
 
   after (done) ->
-    async.parallel [
-      @livePg.close,
-      @docPg.close
-    ], done
+    @livePg.close done
 
   beforeEach (done) ->
     async.parallel [
       ((cb) =>
         @livePg._query "TRUNCATE TABLE #{opTable}", cb
       ), ((cb) =>
-        @docPg._query "TRUNCATE TABLE #{docTable}", cb
+        @livePg._query "TRUNCATE TABLE #{docTable}", cb
       )
-    ], => @docPg.writeSnapshot 'coll', 'doc', { v: 1 }, done
+    ], => @livePg.writeSnapshot 'coll', 'doc', { v: 1 }, done
 
   afterEach (done) ->
     async.parallel [
       ((cb) =>
         @livePg._query "TRUNCATE TABLE #{opTable}", cb
       ), ((cb) =>
-        @docPg._query "TRUNCATE TABLE #{docTable}", cb
+        @livePg._query "TRUNCATE TABLE #{docTable}", cb
       )
     ], done
 

@@ -15,12 +15,11 @@ counter = 1
 
 describe 'snapshot db', ->
 
-  before (done) ->
+  before () ->
 
     @docName = "doc #{counter++}"
     @cName = 'coll'
-    @docPg = new LivePg(process.env.PG_URL, docTable)
-    done();
+    @docPg = new LivePg(process.env.PG_URL)
 
   after (done) ->
     @docPg.close(done)

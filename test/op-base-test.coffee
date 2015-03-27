@@ -28,11 +28,10 @@ counter = 1
 
 describe 'oplog', ->
 
-  before (done) ->
+  before () ->
     @docName = "doc #{counter++}"
     @cName = 'coll'
-    @opPg = new LivePg(process.env.PG_URL, opTable)
-    done();
+    @opPg = new LivePg(process.env.PG_URL)
 
   after (done) ->
     @opPg.close(done)

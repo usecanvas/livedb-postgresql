@@ -70,8 +70,9 @@ var redis2    = redis.createClient(redisURL.port, redisURL.hostname, { auth_pass
 
 // Postgres clients
 var connString = process.env.DATABASE_URL;
-var snapshotDb = new LivePg(connString, 'documents');  // "documents" is a table
-var opLog      = new LivePg(connString, 'operations');
+var poolSize = 20; // default pool size is 10
+var snapshotDb = new LivePg(connString, poolSize);
+var opLog      = new LivePg(connString);
 
 var driver     = livedb.redisDriver(opLog, redis1, redis2);
 var liveClient = livedb.client({ snapshotDb: snapshotDb, driver: driver });

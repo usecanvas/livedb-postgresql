@@ -10,9 +10,8 @@ docTable = 'doc.documents'
 
 describe 'LivePg (snapshots)', ->
 
-  before (done) ->
-    @livePg = new LivePg(process.env.PG_URL, docTable)
-    done()
+  before () ->
+    @livePg = new LivePg(process.env.PG_URL)
 
   after (done) ->
     @livePg.close(done)

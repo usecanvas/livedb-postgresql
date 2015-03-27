@@ -14,13 +14,14 @@ pg.on("end", function onPgEnd() {
  * @classdesc A PostgreSQL adapter for livedb
  * @class
  * @param {string} conn a PostgreSQL connection URL
- * @param {string} table a database table name
+ * @param {number} poolSize connection pool size default 10
  */
-function LivePg(conn, table) {
+function LivePg(conn, poolSize) {
   this.conn     = conn;
-  this.table    = table;
   this.docTable = "doc.documents";
   this.opTable  = "doc.operations";
+
+  pg.defaults.poolSize = poolSize || 10;
 }
 
 /*
