@@ -22,7 +22,6 @@ describe 'LivePg (operations)', ->
     ], done
 
   beforeEach (done) ->
-
     async.parallel [
       ((cb) =>
         @livePg.db.raw("TRUNCATE TABLE #{opTable}").exec cb

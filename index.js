@@ -1,7 +1,6 @@
 'use strict';
 
 var async = require('async');
-var fmt   = require('util').format;
 var knex  = require('knex');
 var pg    = require('pg');
 
@@ -75,54 +74,34 @@ LivePg.prototype.getSnapshot = function getSnapshot(cName, docName, cb) {
  * @param {LivePg~writeSnapshotCallback} cb a callback called with the document
  */
 LivePg.prototype.writeSnapshot = function writeSnapshot(cName, docName, data, cb) {
-  var conn  = this.conn;
-  var table = this.table;
-  var client, done;
+  var conn = this.conn;
+  var done;
+
+  var connect = function (callback) {
+    pg.connect(conn, callback);
+  };
+
+  var upsert = function (client, _done, callback) {
+    var query = "SELECT doc.write_snapshot($1::text, $2::text, $3::jsonb)";
+    done = _done;
+
+    client.query(query, [cName, docName, data], callback);
+  };
+
+  var result = function (dbResult, callback) {
+    var row = dbResult.rows.pop().write_snapshot.data;
+    return callback(null, row);
+  };
 
   async.waterfall([
     connect,
-    begin,
-    lock,
     upsert,
-    commit
-  ], function onDone(err) {
+    result,
+  ], function onDone (err, data) {
     if (done) done();
     if (err) return cb(err, null);
     cb(null, data);
   });
-
-  function connect(callback) {
-    pg.connect(conn, callback);
-  }
-
-  function begin(_client, _done, callback) {
-    client = _client;
-    done   = _done;
-    client.query('BEGIN;', callback);
-  }
-
-  function lock(res, callback) {
-    var query  = fmt('LOCK TABLE %s IN SHARE ROW EXCLUSIVE MODE;', table);
-    client.query(query, callback);
-  }
-
-  function upsert(res, callback) {
-
-    var update = fmt('UPDATE %s SET data = $1 ' +
-      'WHERE collection = $2 AND name = $3', table);
-
-    var insert = fmt('INSERT INTO %s (collection, name, data) ' +
-      'SELECT $2, $3, $1', table);
-
-    var query = fmt('WITH upsert AS (%s RETURNING *) %s ' +
-      'WHERE NOT EXISTS (SELECT * FROM upsert);', update, insert);
-
-    client.query(query, [data, cName, docName], callback);
-  }
-
-  function commit(res, callback) {
-    client.query('COMMIT;', callback);
-  }
 };
 
 /**
@@ -189,18 +168,35 @@ LivePg.prototype.bulkGetSnapshot = function bulkGetSnapshot(requests, cb) {
  * @param {LivePg~writeOpCallback} cb a callback called with the op data
  */
 LivePg.prototype.writeOp = function writeOp(cName, docName, opData, cb) {
-  this.db(this.table)
-    .insert({
-      collection_name: cName,
-      document_name  : docName,
-      version        : opData.v,
-      data           : opData
-    })
-    .returning('data')
-    .exec(function onResult(err, rows) {
-      if (err) return cb(err, null);
-      cb(null, rows[0]);
-    });
+
+  var conn  = this.conn;
+  var done;
+
+  var connect = function (callback) {
+    pg.connect(conn, callback);
+  };
+
+  var upsert = function (client, _done, callback) {
+    var query = "SELECT doc.write_op($1::text, $2::text, $3::bigint, $4::jsonb)";
+    done = _done;
+
+    client.query(query, [cName, docName, opData.v, opData], callback);
+  };
+
+  var result = function (dbResult, callback) {
+    var row = dbResult.rows.pop().write_op.data;
+    return callback(null, row);
+  };
+
+  async.waterfall([
+    connect,
+    upsert,
+    result,
+  ], function onDone (err, data) {
+    if (done) done();
+    if (err) return cb(err, null);
+    cb(null, data);
+  });
 };
 
 /**
