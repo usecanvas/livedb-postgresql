@@ -24,18 +24,18 @@ describe 'LivePg (operations)', ->
   beforeEach (done) ->
     async.parallel [
       ((cb) =>
-        @livePg.db.raw("TRUNCATE TABLE #{opTable}").exec cb
+        @livePg._query "TRUNCATE TABLE #{opTable}", cb
       ), ((cb) =>
-        @docPg.db.raw("TRUNCATE TABLE #{docTable}").exec cb
+        @docPg._query "TRUNCATE TABLE #{docTable}", cb
       )
     ], => @docPg.writeSnapshot 'coll', 'doc', { v: 1 }, done
 
   afterEach (done) ->
     async.parallel [
       ((cb) =>
-        @livePg.db.raw("TRUNCATE TABLE #{opTable}").exec cb
+        @livePg._query "TRUNCATE TABLE #{opTable}", cb
       ), ((cb) =>
-        @docPg.db.raw("TRUNCATE TABLE #{docTable}").exec cb
+        @docPg._query "TRUNCATE TABLE #{docTable}", cb
       )
     ], done
 

@@ -38,12 +38,10 @@ describe 'oplog', ->
     @opPg.close(done)
 
   beforeEach (done) ->
-    @opPg.db.raw("TRUNCATE TABLE #{opTable}").exec () ->
-      done()
+    @opPg._query "TRUNCATE TABLE #{opTable}", done
 
   afterEach (done) ->
-    @opPg.db.raw("TRUNCATE TABLE #{opTable}").exec () ->
-      done()
+    @opPg._query "TRUNCATE TABLE #{opTable}", done
 
   it 'returns 0 when getVersion is called on a new document', (done) ->
     @opPg.getVersion @cName, @docName, (err, v) ->

@@ -1,10 +1,11 @@
-'use strict';
+"use strict";
 
-var async = require('async');
-var knex  = require('knex');
-var pg    = require('pg');
+var fmt   = require("util").format;
+var async = require("async");
+var squel = require("squel");
+var pg    = require("pg");
 
-pg.on('end', function onPgEnd() {
+pg.on("end", function onPgEnd() {
   LivePg.willClose = true;
 });
 
@@ -18,7 +19,6 @@ pg.on('end', function onPgEnd() {
  */
 function LivePg(conn, table) {
   this.conn  = conn;
-  this.db    = knex({ client: 'pg', connection: conn });
   this.table = table;
 }
 
@@ -43,14 +43,25 @@ function LivePg(conn, table) {
  * @param {LivePg~getSnapshotCallback} cb a callback called with the document
  */
 LivePg.prototype.getSnapshot = function getSnapshot(cName, docName, cb) {
-  this.db(this.table)
-    .where({ collection: cName, name: docName })
-    .select('data')
-    .limit(1)
-    .exec(function onResult(err, rows) {
-      if (err) return cb(err, null);
-      cb(null, rows.length ? rows[0].data : null);
-    });
+  var self = this;
+
+  var execute = function (callback) {
+    self._query({
+      name: "get_snapshot",
+      text: "SELECT data FROM doc.documents WHERE collection = $1 AND name = $2 LIMIT 1",
+      values: [cName, docName]
+    }, callback);
+  };
+
+  var result = function (dbResult, callback) {
+    var row = null;
+    if (dbResult.rows.length) {
+      row = dbResult.rows.pop().data;
+    }
+    callback(null, row);
+  };
+
+  async.waterfall([ execute, result ], cb);
 };
 
 /**
@@ -64,7 +75,7 @@ LivePg.prototype.getSnapshot = function getSnapshot(cName, docName, cb) {
  * Write a document snapshot to a given collection.
  *
  * This method uses pg instead of knex because of the complex transaction and
- * locking that's necessary. The lock prevents a race condition between a failed
+ * locking that"s necessary. The lock prevents a race condition between a failed
  * `UPDATE` and the subsequent `INSERT`.
  *
  * @method
@@ -74,34 +85,22 @@ LivePg.prototype.getSnapshot = function getSnapshot(cName, docName, cb) {
  * @param {LivePg~writeSnapshotCallback} cb a callback called with the document
  */
 LivePg.prototype.writeSnapshot = function writeSnapshot(cName, docName, data, cb) {
-  var conn = this.conn;
-  var done;
+  var self = this;
 
-  var connect = function (callback) {
-    pg.connect(conn, callback);
-  };
-
-  var upsert = function (client, _done, callback) {
-    var query = "SELECT doc.write_snapshot($1::text, $2::text, $3::jsonb)";
-    done = _done;
-
-    client.query(query, [cName, docName, data], callback);
+  var execute = function (callback) {
+    self._query({
+      name: "write_snapshot",
+      text: "SELECT doc.write_snapshot($1::text, $2::text, $3::jsonb)",
+      values: [cName, docName, data]
+    }, callback);
   };
 
   var result = function (dbResult, callback) {
     var row = dbResult.rows.pop().write_snapshot.data;
-    return callback(null, row);
+    callback(null, row);
   };
 
-  async.waterfall([
-    connect,
-    upsert,
-    result,
-  ], function onDone (err, data) {
-    if (done) done();
-    if (err) return cb(err, null);
-    cb(null, data);
-  });
+  async.waterfall([ execute, result ], cb);
 };
 
 /**
@@ -119,17 +118,29 @@ LivePg.prototype.writeSnapshot = function writeSnapshot(cName, docName, data, cb
  * @param {LivePg~bulkGetSnapshotCallback} cb a callback called with the results
  */
 LivePg.prototype.bulkGetSnapshot = function bulkGetSnapshot(requests, cb) {
+
   var collections = Object.keys(requests);
-  var query       = this.db(this.table).select('collection', 'name', 'data');
+  var self = this;
 
-  collections.forEach(function eachCName(cName) {
-    query
-      .orWhereIn('name', requests[cName])
-      .andWhere({ collection: cName });
+  var qry = squel.select({ numberedParameters: true })
+    .field("collection")
+    .field("name")
+    .field("data")
+    .from("doc.documents");
+
+  var expr = squel.expr().or_begin();
+  Object.keys(requests).forEach(function (cName) {
+      expr.or("collection = ?", cName)
+          .and("name IN ?", requests[cName]);
   });
+  expr.end();
 
-  query.exec(function onDone(err, results) {
-    if (err) return cb(err, null);
+  var execute = function (callback) {
+    self._query(qry.where(expr).toParam(), callback);
+  };
+
+  var result = function (dbResult, callback) {
+    var results = dbResult.rows;
 
     results = results.reduce(function eachResult(obj, result) {
       obj[result.collection] = obj[result.collection] || {};
@@ -142,8 +153,10 @@ LivePg.prototype.bulkGetSnapshot = function bulkGetSnapshot(requests, cb) {
       if (!results[collections[i]]) results[collections[i]] = {};
     }
 
-    cb(null, results);
-  });
+    callback(null, results);
+  };
+
+  async.waterfall([ execute, result ], cb);
 };
 
 /*
@@ -168,35 +181,22 @@ LivePg.prototype.bulkGetSnapshot = function bulkGetSnapshot(requests, cb) {
  * @param {LivePg~writeOpCallback} cb a callback called with the op data
  */
 LivePg.prototype.writeOp = function writeOp(cName, docName, opData, cb) {
+  var self = this;
 
-  var conn  = this.conn;
-  var done;
-
-  var connect = function (callback) {
-    pg.connect(conn, callback);
-  };
-
-  var upsert = function (client, _done, callback) {
-    var query = "SELECT doc.write_op($1::text, $2::text, $3::bigint, $4::jsonb)";
-    done = _done;
-
-    client.query(query, [cName, docName, opData.v, opData], callback);
+  var execute = function (callback) {
+    self._query({
+      name: "write_op",
+      text: "SELECT doc.write_op($1::text, $2::text, $3::bigint, $4::jsonb)",
+      values: [cName, docName, opData.v, opData]
+    }, callback);
   };
 
   var result = function (dbResult, callback) {
     var row = dbResult.rows.pop().write_op.data;
-    return callback(null, row);
+    callback(null, row);
   };
 
-  async.waterfall([
-    connect,
-    upsert,
-    result,
-  ], function onDone (err, data) {
-    if (done) done();
-    if (err) return cb(err, null);
-    cb(null, data);
-  });
+  async.waterfall([ execute, result ], cb);
 };
 
 /**
@@ -215,15 +215,25 @@ LivePg.prototype.writeOp = function writeOp(cName, docName, opData, cb) {
  * @param {LivePg~getVersionCallback} cb a callback called with the next version
  */
 LivePg.prototype.getVersion = function getVersion(cName, docName, cb) {
-  this.db(this.table)
-    .where({ collection_name: cName, document_name: docName })
-    .select('version')
-    .orderBy('version', 'desc')
-    .limit(1)
-    .exec(function onResult(err, rows) {
-      if (err) return cb(err, null);
-      cb(null, rows.length ? parseInt(rows[0].version, 10) + 1 : 0);
-    });
+  var self = this;
+
+  var execute = function (callback) {
+    self._query({
+      name: "get_version",
+      text: "SELECT version FROM doc.operations WHERE collection_name = $1 AND document_name = $2 ORDER BY version DESC LIMIT 1",
+      values: [cName, docName]
+    }, callback);
+  };
+
+  var result = function (dbResult, callback) {
+    var version = 0;
+    if (dbResult.rows.length) {
+      version = parseInt(dbResult.rows.pop().version, 10) + 1;
+    }
+    callback(null, version);
+  };
+
+  async.waterfall([ execute, result ], cb);
 };
 
 /**
@@ -244,22 +254,36 @@ LivePg.prototype.getVersion = function getVersion(cName, docName, cb) {
  * @param {LivePg~getOpsCallback} cb a callback called with the ops
  */
 LivePg.prototype.getOps = function getOps(cName, docName, start, end, cb) {
-  var query = this.db(this.table)
-    .where('version', '>=', start)
-    .andWhere({ collection_name: cName, document_name: docName });
+  var self = this;
 
-  if (typeof end === 'number') {
-    query.andWhere('version', '<', end);
-  }
+  var execute = function (callback) {
+    var name    = "get_ops";
+    var baseQry = "SELECT data FROM doc.operations WHERE version >= $1 AND collection_name = $2 AND document_name = $3%s ORDER BY version ASC";
+    var values  = [start, cName, docName];
+    var endQry  = "";
 
-  query.select('data')
-    .orderBy('version', 'asc')
-    .exec(function onResult(err, rows) {
-      if (err) return cb(err, null);
-      cb(null, rows.map(function eachRow(row) {
-        return row.data;
-      }));
+    if ("number" === typeof end) {
+      name   = "get_ops_end";
+      endQry = " AND version < $4";
+      values = [start, cName, docName, end];
+    }
+
+    self._query({
+      name:   name,
+      text:   fmt(baseQry, endQry),
+      values: values
+    }, callback);
+  };
+
+  var result = function (dbResult, callback) {
+    var rows = dbResult.rows.map(function eachRow (row) {
+      return row.data;
     });
+
+    callback(null, rows);
+  };
+
+  async.waterfall([ execute, result ], cb);
 };
 
 /**
@@ -270,6 +294,21 @@ LivePg.prototype.getOps = function getOps(cName, docName, start, end, cb) {
  */
 LivePg.prototype.close = function close(cb) {
   LivePg.close(cb);
+};
+
+LivePg.prototype._query = function (query, cb) {
+  var conn = this.conn;
+
+  var connect = function (callback) {
+    pg.connect(conn, callback);
+  };
+
+  var executeQuery = function (client, done, callback) {
+    client.query(query, callback);
+    done();
+  };
+
+  async.waterfall([ connect, executeQuery ], cb);
 };
 
 /**
@@ -289,7 +328,7 @@ LivePg.close = function close(cb) {
   if (this.willClose) {
     cb();
   } else {
-    pg.once('end', cb);
+    pg.once("end", cb);
     pg.end();
   }
 };

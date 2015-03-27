@@ -18,10 +18,10 @@ describe 'LivePg (snapshots)', ->
     @livePg.close(done)
 
   beforeEach (done) ->
-    @livePg.db.raw("TRUNCATE TABLE #{opTable}").exec done
+    @livePg._query "TRUNCATE TABLE #{opTable}", done
 
   afterEach (done) ->
-    @livePg.db.raw("TRUNCATE TABLE #{docTable}").exec done
+    @livePg._query "TRUNCATE TABLE #{docTable}", done
 
   describe '#getSnapshot', ->
     it 'returns null when the document does not exist', (done) ->

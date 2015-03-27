@@ -1,6 +1,7 @@
 
 # This is a test suite for snapshot database implementations
 assert = require 'assert'
+pg = require 'pg'
 textType = require('ot-text').type
 jsonType = require('ot-json0').type
 LivePg = require '..'
@@ -15,6 +16,7 @@ counter = 1
 describe 'snapshot db', ->
 
   before (done) ->
+
     @docName = "doc #{counter++}"
     @cName = 'coll'
     @docPg = new LivePg(process.env.PG_URL, docTable)
@@ -25,13 +27,11 @@ describe 'snapshot db', ->
 
   beforeEach (done) ->
 
-    @docPg.db.raw("TRUNCATE TABLE #{docTable}").exec () ->
-      done()
+    @docPg._query "TRUNCATE TABLE #{docTable}", done
 
   afterEach (done) ->
 
-    @docPg.db.raw("TRUNCATE TABLE #{docTable}").exec () ->
-      done()
+    @docPg._query "TRUNCATE TABLE #{docTable}", done
 
   it 'returns null when you getSnapshot on a nonexistant doc name', (done) ->
     @docPg.getSnapshot @cName, @docName, (err, data) ->
