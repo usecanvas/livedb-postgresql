@@ -1,28 +1,36 @@
+
 LivePg = require '..'
 async  = require 'async'
 should = require 'should'
 
 require './test-helper'
 
-describe 'LivePg (operations)', ->
-  beforeEach (done) ->
-    @livePg = new LivePg(process.env.PG_URL, 'operations')
-    @docPg  = new LivePg(process.env.PG_URL, 'documents')
+opTable = 'doc.operations'
+docTable = 'doc.documents'
 
+describe 'LivePg (operations)', ->
+
+  before () ->
+    @livePg = new LivePg(process.env.PG_URL)
+
+  after (done) ->
+    @livePg.close done
+
+  beforeEach (done) ->
     async.parallel [
       ((cb) =>
-        @livePg.db.raw('TRUNCATE TABLE operations').exec cb
+        @livePg._query "TRUNCATE TABLE #{opTable}", cb
       ), ((cb) =>
-        @docPg.db.raw('TRUNCATE TABLE documents').exec cb
+        @livePg._query "TRUNCATE TABLE #{docTable}", cb
       )
-    ], => @docPg.writeSnapshot 'coll', 'doc', { v: 1 }, done
+    ], => @livePg.writeSnapshot 'coll', 'doc', { v: 1 }, done
 
   afterEach (done) ->
     async.parallel [
       ((cb) =>
-        @livePg.db.raw('TRUNCATE TABLE operations').exec cb
+        @livePg._query "TRUNCATE TABLE #{opTable}", cb
       ), ((cb) =>
-        @docPg.db.raw('TRUNCATE TABLE documents').exec cb
+        @livePg._query "TRUNCATE TABLE #{docTable}", cb
       )
     ], done
 

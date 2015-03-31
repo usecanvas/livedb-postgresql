@@ -1,3 +1,4 @@
+
 LivePg = require '..'
 async  = require 'async'
 pg     = require 'pg'
@@ -8,7 +9,7 @@ require './test-helper'
 
 describe 'LivePg', ->
   beforeEach ->
-    @livePg = new LivePg(process.env.PG_URL, 'documents')
+    @livePg = new LivePg(process.env.PG_URL)
 
   describe '#close', ->
     beforeEach ->
