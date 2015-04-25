@@ -33,6 +33,14 @@ describe 'LivePg (operations)', ->
         res.should.eql v: 1
         done()
 
+    it 'ignores duplicate ops', (done) ->
+      @livePg.writeOp 'coll', 'doc', { v: 1 }, (err, res) =>
+        throw err if err
+        @livePg.writeOp 'coll', 'doc', { v: 1 }, (err, res) ->
+          throw err if err
+          res.should.eql v: 1
+          done()
+
   describe '#getVersion', ->
     it 'returns 1 if there are no ops', (done) ->
       @livePg.getVersion 'coll', 'doc', (err, version) ->
