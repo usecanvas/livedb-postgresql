@@ -200,8 +200,9 @@ LivePg.prototype.writeOp = function writeOp(cName, docName, opData, cb) {
     })
     .returning('data')
     .exec(function onResult(err, rows) {
-      if (err) return cb(err, null);
-      cb(null, rows[0]);
+      if (err && err.code !== '23505')
+        return cb(err, null);
+      cb(null, opData);
     });
 };
 
