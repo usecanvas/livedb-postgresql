@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/slowink/livedb-postgresql"
+    "url": "https://github.com/usecanvas/livedb-postgresql"
   },
   "keywords": [
     "livedb",
@@ -19,9 +19,9 @@
   "author": "Jonathan Clem",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/slowink/livedb-postgresql/issues"
+    "url": "https://github.com/usecanvas/livedb-postgresql/issues"
   },
-  "homepage": "https://github.com/slowink/livedb-postgresql",
+  "homepage": "https://github.com/usecanvas/livedb-postgresql",
   "devDependencies": {
     "coffee-script": "^1.8.0",
     "mocha": "^2.0.1",

@@ -13,7 +13,9 @@ npm install --save livedb-postgresql
 
 ### Requirements
 
-livedb-postgresql has relatively relaxed requirements for the database it connects to. The table names can be anything, as they're set when creating an instance of livedb-postgresql.
+livedb-postgresql has relatively relaxed requirements for the database it
+connects to. The table names can be anything, because they're set when creating
+an instance of livedb-postgresql.
 
 #### Snapshots Table
 
@@ -70,7 +72,7 @@ var redis2    = redis.createClient(redisURL.port, redisURL.hostname, { auth_pass
 
 // Postgres clients
 var connString = process.env.DATABASE_URL;
-var snapshotDb = new LivePg(connString, 'documents');  // "documents" is a table
+var snapshotDb = new LivePg(connString, 'documents');  // "documents" is a table name
 var opLog      = new LivePg(connString, 'operations');
 
 var driver     = livedb.redisDriver(opLog, redis1, redis2);
