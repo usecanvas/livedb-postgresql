@@ -1,6 +1,6 @@
 {
   "name": "livedb-postgresql",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "PostgreSQL adapter for livedb",
   "main": "index.js",
   "scripts": {
