@@ -4,7 +4,7 @@
   "description": "PostgreSQL adapter for livedb",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --compilers coffee:coffee-script/register"
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -23,7 +23,6 @@
   },
   "homepage": "https://github.com/usecanvas/livedb-postgresql",
   "devDependencies": {
-    "coffee-script": "^1.8.0",
     "mocha": "^2.0.1",
     "should": "^4.3.0",
     "sinon": "^1.12.1"
