@@ -9,8 +9,13 @@ describe('LivePg (operations)', () => {
   let docPg, livePg;
 
   beforeEach(done => {
-    livePg = new LivePg(process.env.PG_URL, 'operations');
-    docPg  = new LivePg(process.env.PG_URL, 'documents');
+    livePg = new LivePg({
+      conn : process.env.PG_URL,
+      table: 'operations' });
+
+    docPg  = new LivePg({
+      conn : process.env.PG_URL,
+      table: 'documents' });
 
     truncateTables(() => {
       docPg.writeSnapshot('coll', 'doc', { v: 1 }, done);
@@ -22,7 +27,7 @@ describe('LivePg (operations)', () => {
   });
 
   describe('#writeOp', () => {
-    it('returns the written op', done => {
+    it.only('returns the written op', done => {
       livePg.writeOp('coll', 'doc', { v: 1 }, (err, res) => {
         if (err) throw err;
         res.should.eql({ v: 1 });

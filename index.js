@@ -7,15 +7,30 @@ const pg    = require('pg');
 pg.on('end', () => LivePg.willClose = true);
 
 class LivePg {
-  constructor(conn, table) {
-    this.conn  = conn;
-    this.db    = knex({ client: 'pg', connection: conn });
-    this.table = table;
+  constructor(opts) {
+    if (!opts) {
+      throw new Error(
+        'An options object must be passed to the LivePg constructor'
+      );
+    }
+
+    this.conn  = opts.conn;
+    this.table = opts.table;
+    this.db    = knex({ client: 'pg', connection: this.conn });
+
+    this.snapshotCollectionColumn  = opts.snapshotCollectionColumn || 'collection';
+    this.snapshotNameColumn        = opts.snapshotNameColumn || 'name';
+    this.operationCollectionColumn = opts.operationCollectionColumn || 'collection_name';
+    this.operationDocumentColumn   = opts.operationDocumentColumn || 'document_name';
+    this.operationVersionColumn    = opts.operationVersionColumn || 'version';
+    this.operationDataColumn       = opts.operationDataColumn || 'data';
   }
 
   getSnapshot(cName, docName, cb) {
     this.db(this.table)
-      .where({ collection: cName, name: docName })
+      .where({
+        [this.snapshotCollectionColumn]: cName,
+        [this.snapshotNameColumn]: docName })
       .select('data')
       .limit(1)
       .exec((err, rows) => {
@@ -25,7 +40,9 @@ class LivePg {
   }
 
   writeSnapshot(cName, docName, data, cb) {
-    const { conn, table } = this;
+    const conn  = this.conn;
+    const table = this.table;
+
     let client, done;
 
     async.waterfall([

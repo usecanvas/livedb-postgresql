@@ -2,10 +2,9 @@
   "name": "livedb-postgresql",
   "version": "1.0.5",
   "description": "PostgreSQL adapter for livedb",
-  "main": "dist/index.js",
   "scripts": {
     "build": "babel index.js -o dist",
-    "test": "mocha --compilers js:babel/register -r test/test-helper"
+    "test": "node --harmony_arrow_functions --harmony_computed_property_names ./node_modules/.bin/_mocha -r test/test-helper"
   },
   "repository": {
     "type": "git",
