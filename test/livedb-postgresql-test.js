@@ -1,50 +1,49 @@
 'use strict';
 
-var LivePg = require('..');
-var async  = require('async');
-var pg     = require('pg');
-var sinon  = require('sinon');
+const LivePg = require('..');
+const async  = require('async');
+const pg     = require('pg');
+const sinon  = require('sinon');
 
-require('./test-helper');
+describe('LivePg', () => {
+  let livePg;
 
-describe('LivePg', function() {
-  var livePg;
-
-  beforeEach(function() {
+  beforeEach(() => {
     livePg = new LivePg(process.env.PG_URL, 'documents');
   });
 
-  describe('#close', function() {
-    beforeEach(function() {
+  describe('#close', () => {
+    beforeEach(() => {
       LivePg.willClose = undefined;
       sinon.spy(pg, 'end');
     });
 
-    afterEach(function() {
+    afterEach(() => {
       pg.end.restore();
     });
 
-    it('calls end on pg', function(done) {
-      livePg.close(function() {
+    it('calls end on pg', done => {
+      livePg.close(() => {
         pg.end.callCount.should.eql(1);
         done();
       });
     });
 
-    it('does not call end on pg twice', function(done) {
+    it('does not call end on pg twice', done => {
       async.series([
-        function(cb) { livePg.close(cb); },
-        function(cb) { livePg.close(cb); }
-      ], function(err) {
+        cb => livePg.close(cb),
+        cb => livePg.close(cb) 
+      ], err => {
         if (err) throw err;
         pg.end.callCount.should.eql(1);
         done();
       });
     });
 
-    it('does not call end on pg if it has already been called', function(done) {
+    it('does not call end on pg if it has already been called', done => {
       pg.end();
-      livePg.close(function() {
+
+      livePg.close(() => {
         pg.end.callCount.should.eql(1);
         done();
       });

@@ -2,9 +2,9 @@
   "name": "livedb-postgresql",
   "version": "1.0.5",
   "description": "PostgreSQL adapter for livedb",
-  "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "build": "babel index.js -o dist",
+    "test": "node --harmony_arrow_functions --harmony_computed_property_names ./node_modules/.bin/_mocha -r test/test-helper"
   },
   "repository": {
     "type": "git",
@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/usecanvas/livedb-postgresql",
   "devDependencies": {
+    "babel": "^5.1.13",
     "mocha": "^2.0.1",
     "should": "^4.3.0",
     "sinon": "^1.12.1"
