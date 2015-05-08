@@ -10,7 +10,14 @@ describe('LivePg (snapshots)', function() {
   var livePg;
 
   beforeEach(function(done) {
-    livePg = new LivePg({ conn: process.env.PG_URL, table: 'documents' });
+    livePg = new LivePg({
+      conn                    : process.env.PG_URL,
+      table                   : 'documents',
+      snapshotCollectionColumn: 'collection_name',
+      snapshotNameColumn      : 'docname',
+      snapshotDataColumn      : 'json',
+    });
+
     truncateTables(done);
   });
 
