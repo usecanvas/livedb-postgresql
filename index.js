@@ -14,13 +14,14 @@ pg.on('end', function onPgEnd() {
  *
  * @classdesc A PostgreSQL adapter for livedb
  * @class
- * @param {string} conn a PostgreSQL connection URL
- * @param {string} table a database table name
+ * @param {object} opts An object of options
+ * @param {string} opts.conn A PostgreSQL connection URL
+ * @param {string} opts.table A database table name
  */
-function LivePg(conn, table) {
-  this.conn  = conn;
-  this.db    = knex({ client: 'pg', connection: conn });
-  this.table = table;
+function LivePg(opts) {
+  this.conn  = required(opts, 'conn');
+  this.table = required(opts, 'table');
+  this.db    = knex({ client: 'pg', connection: this.conn });
 }
 
 /*
@@ -199,7 +200,7 @@ LivePg.prototype.writeOp = function writeOp(cName, docName, opData, cb) {
       data           : opData
     })
     .returning('data')
-    .exec(function onResult(err, rows) {
+    .exec(function onResult(err) {
       if (err && err.code !== '23505')
         return cb(err, null);
       cb(null, opData);
@@ -300,5 +301,13 @@ LivePg.close = function close(cb) {
     pg.end();
   }
 };
+
+function required(opts, key) {
+  if (!opts[key]) {
+    throw new Error('Key "' + key + '" is required in LivePg constructor');
+  }
+
+  return opts[key];
+}
 
 module.exports = LivePg;

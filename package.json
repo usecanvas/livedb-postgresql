@@ -4,7 +4,7 @@
   "description": "PostgreSQL adapter for livedb",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha && jshint . --verbose"
   },
   "repository": {
     "type": "git",

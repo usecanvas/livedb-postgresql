@@ -9,8 +9,8 @@ describe('LivePg (operations)', function() {
   var docPg, livePg;
 
   beforeEach(function(done) {
-    livePg = new LivePg(process.env.PG_URL, 'operations');
-    docPg  = new LivePg(process.env.PG_URL, 'documents');
+    livePg = new LivePg({ conn: process.env.PG_URL, table: 'operations' });
+    docPg  = new LivePg({ conn: process.env.PG_URL, table: 'documents' });
 
     truncateTables(function() {
       docPg.writeSnapshot('coll', 'doc', { v: 1 }, done);

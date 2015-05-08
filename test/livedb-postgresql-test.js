@@ -11,7 +11,7 @@ describe('LivePg', function() {
   var livePg;
 
   beforeEach(function() {
-    livePg = new LivePg(process.env.PG_URL, 'documents');
+    livePg = new LivePg({ conn: process.env.PG_URL, table: 'documents' });
   });
 
   describe('#close', function() {

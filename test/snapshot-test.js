@@ -10,7 +10,7 @@ describe('LivePg (snapshots)', function() {
   var livePg;
 
   beforeEach(function(done) {
-    livePg = new LivePg(process.env.PG_URL, 'documents');
+    livePg = new LivePg({ conn: process.env.PG_URL, table: 'documents' });
     truncateTables(done);
   });
 
