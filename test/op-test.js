@@ -9,21 +9,21 @@ describe('LivePg (operations)', function() {
   var docPg, livePg;
 
   beforeEach(function(done) {
-    livePg = new LivePg({
-      conn              : process.env.PG_URL,
-      table             : 'operations',
-      opCollectionColumn: 'cname',
-      opDocumentColumn  : 'dname',
-      opDataColumn      : 'json',
-      opVersionColumn   : 'v',
+    livePg = new LivePg.OpLog({
+      conn            : process.env.PG_URL,
+      table           : 'operations',
+      collectionColumn: 'cname',
+      documentColumn  : 'dname',
+      dataColumn      : 'json',
+      versionColumn   : 'v',
     });
 
-    docPg  = new LivePg({
-      conn                    : process.env.PG_URL,
-      table                   : 'documents',
-      snapshotCollectionColumn: 'collection_name',
-      snapshotNameColumn      : 'docname',
-      snapshotDataColumn      : 'json',
+    docPg  = new LivePg.Snapshots({
+      conn            : process.env.PG_URL,
+      table           : 'documents',
+      collectionColumn: 'collection_name',
+      nameColumn      : 'docname',
+      dataColumn      : 'json',
     });
 
     truncateTables(function() {

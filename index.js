@@ -1,9 +1,10 @@
 'use strict';
 
-var async = require('async');
-var fmt   = require('util').format;
-var knex  = require('knex');
-var pg    = require('pg');
+var async    = require('async');
+var fmt      = require('util').format;
+var inherits = require('util').inherits;
+var knex     = require('knex');
+var pg       = require('pg');
 
 pg.on('end', function onPgEnd() {
   LivePg.willClose = true;
@@ -17,35 +18,36 @@ pg.on('end', function onPgEnd() {
  * @param {object} opts An object of options
  * @param {string} opts.conn A PostgreSQL connection URL
  * @param {string} opts.table A database table name
- * @param {string} opts.snapshotCollectionColumn The name of the column in the
- *   snapshot table with the collection
- * @param {string} opts.snapshotNameColumn The name of the column in the
- *   snapshot table with the document
- * @param {string} opts.snapshotDataColumn The name of the column in the
- *   snapshot table with the snapshot data
- * @param {string} opts.opCollectionColumn The name of the column in the op
- *   table with the collection
- * @param {string} opts.opDocumentColumn The name of the column in the op
- *   table with the document
- * @param {string} opts.opDataColumn The name of the column in the op
- *   table with the op data
- * @param {string} opts.opVersionColumn The name of the column in the op
- *   table with the op version
  */
 function LivePg(opts) {
   this.conn  = required(opts, 'conn');
   this.table = required(opts, 'table');
   this.db    = knex({ client: 'pg', connection: this.conn });
-
-  this.snapshotCollectionColumn = defaults(opts, 'snapshotCollectionColumn', 'collection');
-  this.snapshotNameColumn       = defaults(opts, 'snapshotNameColumn', 'name');
-  this.snapshotDataColumn       = defaults(opts, 'snapshotDataColumn', 'data');
-
-  this.opCollectionColumn = defaults(opts, 'opCollectionColumn', 'collection_name');
-  this.opDocumentColumn   = defaults(opts, 'opDocumentColumn', 'document_name');
-  this.opDataColumn       = defaults(opts, 'opDataColumn', 'data');
-  this.opVersionColumn    = defaults(opts, 'opVersionColumn', 'version');
 }
+
+/**
+ * Get a livedb client for snapshots.
+ *
+ * @classdesc A PostgreSQL adapter for livedb snapshots
+ * @class
+ * @extends LivePg
+ * @param {object} opts An object of options
+ * @param {string} opts.collectionColumn The name of the column in the
+ *   snapshot table with the collection
+ * @param {string} opts.nameColumn The name of the column in the
+ *   snapshot table with the document
+ * @param {string} opts.dataColumn The name of the column in the
+ *   snapshot table with the snapshot data
+ */
+LivePg.Snapshots = function LivePgSnapshots(opts) {
+  LivePg.call(this, opts);
+
+  this.collectionColumn = defaults(opts, 'collectionColumn', 'collection');
+  this.nameColumn       = defaults(opts, 'nameColumn', 'name');
+  this.dataColumn       = defaults(opts, 'dataColumn', 'data');
+};
+
+inherits(LivePg.Snapshots, LivePg);
 
 /*
  * SNAPSHOT API
@@ -55,7 +57,7 @@ function LivePg(opts) {
 /**
  * A callback called when getting a document snapshot.
  *
- * @callback LivePg~getSnapshotCallback
+ * @callback LivePg.Snapshots~getSnapshotCallback
  * @param {?Error} err an error
  * @param {?Object} doc document data
  */
@@ -65,29 +67,30 @@ function LivePg(opts) {
  * @method
  * @param {string} cName the collection name
  * @param {string} docName the document name
- * @param {LivePg~getSnapshotCallback} cb a callback called with the document
+ * @param {LivePg.Snapshots~getSnapshotCallback} cb a callback called with the
+ *   document
  */
-LivePg.prototype.getSnapshot = function getSnapshot(cName, docName, cb) {
+LivePg.Snapshots.prototype.getSnapshot = function getSnapshot(cName, docName, cb) {
   var where = {};
-  where[this.snapshotCollectionColumn] = cName;
-  where[this.snapshotNameColumn]       = docName;
+  where[this.collectionColumn] = cName;
+  where[this.nameColumn]       = docName;
 
-  var snapshotDataColumn = this.snapshotDataColumn;
+  var dataColumn = this.dataColumn;
 
   this.db(this.table)
     .where(where)
-    .select(snapshotDataColumn)
+    .select(dataColumn)
     .limit(1)
     .exec(function onResult(err, rows) {
       if (err) return cb(err, null);
-      cb(null, rows.length ? rows[0][snapshotDataColumn] : null);
+      cb(null, rows.length ? rows[0][dataColumn] : null);
     });
 };
 
 /**
  * A callback called when writing a document snapshot.
  *
- * @callback LivePg~writeSnapshotCallback
+ * @callback LivePg.Snapshots~writeSnapshotCallback
  * @param {?Error} err an error
  * @param {?Object} doc document data
  */
@@ -102,16 +105,17 @@ LivePg.prototype.getSnapshot = function getSnapshot(cName, docName, cb) {
  * @param {string} cName the collection name
  * @param {string} docName the document name
  * @param {Object} data the document data
- * @param {LivePg~writeSnapshotCallback} cb a callback called with the document
+ * @param {LivePg.Snapshots~writeSnapshotCallback} cb a callback called with the
+ *   document
  */
-LivePg.prototype.writeSnapshot = function writeSnapshot(cName, docName, data, cb) {
+LivePg.Snapshots.prototype.writeSnapshot = function writeSnapshot(cName, docName, data, cb) {
   var conn  = this.conn;
   var table = this.table;
   var client, done;
 
-  var snapshotCollectionColumn = this.snapshotCollectionColumn;
-  var snapshotDataColumn       = this.snapshotDataColumn;
-  var snapshotNameColumn       = this.snapshotNameColumn;
+  var collectionColumn = this.collectionColumn;
+  var dataColumn       = this.dataColumn;
+  var nameColumn       = this.nameColumn;
 
   async.waterfall([
     connect,
@@ -145,10 +149,10 @@ LivePg.prototype.writeSnapshot = function writeSnapshot(cName, docName, data, cb
     var _table = client.escapeIdentifier(table);
 
     var update = fmt('UPDATE %s SET %s = $1 WHERE %s = $2 AND %s = $3',
-      _table, snapshotDataColumn, snapshotCollectionColumn, snapshotNameColumn);
+      _table, dataColumn, collectionColumn, nameColumn);
 
     var insert = fmt('INSERT INTO %s (%s, %s, %s) SELECT $2, $3, $1',
-      _table, snapshotCollectionColumn, snapshotNameColumn, snapshotDataColumn);
+      _table, collectionColumn, nameColumn, dataColumn);
 
     var query = fmt('WITH upsert AS (%s RETURNING *) %s ' +
       'WHERE NOT EXISTS (SELECT * FROM upsert);', update, insert);
@@ -164,7 +168,7 @@ LivePg.prototype.writeSnapshot = function writeSnapshot(cName, docName, data, cb
 /**
  * A callback called when getting snapshots in bulk.
  *
- * @callback LivePg~bulkGetSnapshotCallback
+ * @callback LivePg.Snapshots~bulkGetSnapshotCallback
  * @param {?Error} err an error
  * @param {?Object} results the results
  */
@@ -173,24 +177,25 @@ LivePg.prototype.writeSnapshot = function writeSnapshot(cName, docName, data, cb
  *
  * @method
  * @param {Object} requests the requests documents
- * @param {LivePg~bulkGetSnapshotCallback} cb a callback called with the results
+ * @param {LivePg.Snapshots~bulkGetSnapshotCallback} cb a callback called with
+ *   the results
  */
-LivePg.prototype.bulkGetSnapshot = function bulkGetSnapshot(requests, cb) {
+LivePg.Snapshots.prototype.bulkGetSnapshot = function bulkGetSnapshot(requests, cb) {
   var collections              = Object.keys(requests);
-  var snapshotCollectionColumn = this.snapshotCollectionColumn;
-  var snapshotNameColumn       = this.snapshotNameColumn;
-  var snapshotDataColumn       = this.snapshotDataColumn;
+  var collectionColumn = this.collectionColumn;
+  var nameColumn       = this.nameColumn;
+  var dataColumn       = this.dataColumn;
 
   var query = this.db(this.table).select(
-    snapshotCollectionColumn, snapshotNameColumn, snapshotDataColumn
+    collectionColumn, nameColumn, dataColumn
   );
 
   collections.forEach(function eachCName(cName) {
     var andWhere = {};
-    andWhere[snapshotCollectionColumn] = cName;
+    andWhere[collectionColumn] = cName;
 
     query
-      .orWhereIn(snapshotNameColumn, requests[cName])
+      .orWhereIn(nameColumn, requests[cName])
       .andWhere(andWhere);
   });
 
@@ -198,8 +203,10 @@ LivePg.prototype.bulkGetSnapshot = function bulkGetSnapshot(requests, cb) {
     if (err) return cb(err, null);
 
     results = results.reduce(function eachResult(obj, result) {
-      obj[result[snapshotCollectionColumn]] = obj[result[snapshotCollectionColumn]] || {};
-      obj[result[snapshotCollectionColumn]][result[snapshotNameColumn]] = result[snapshotDataColumn];
+      obj[result[collectionColumn]] =
+        obj[result[collectionColumn]] || {};
+      obj[result[collectionColumn]][result[nameColumn]] =
+        result[dataColumn];
       return obj;
     }, {});
 
@@ -218,6 +225,33 @@ LivePg.prototype.bulkGetSnapshot = function bulkGetSnapshot(requests, cb) {
  */
 
 /**
+ * Get a livedb client for operations.
+ *
+ * @classdesc A PostgreSQL adapter for livedb operations
+ * @class
+ * @extends LivePg
+ * @param {object} opts An object of options
+ * @param {string} opts.collectionColumn The name of the column in the op
+ *   table with the collection
+ * @param {string} opts.documentColumn The name of the column in the op table
+ *   with the document
+ * @param {string} opts.dataColumn The name of the column in the op table with
+ *   the op data
+ * @param {string} opts.versionColumn The name of the column in the op table
+ *   with the op version
+ */
+LivePg.OpLog = function LivePgOpLog(opts) {
+  LivePg.call(this, opts);
+
+  this.collectionColumn = defaults(opts, 'collectionColumn', 'collection_name');
+  this.documentColumn   = defaults(opts, 'documentColumn', 'document_name');
+  this.dataColumn       = defaults(opts, 'dataColumn', 'data');
+  this.versionColumn    = defaults(opts, 'versionColumn', 'version');
+};
+
+inherits(LivePg.OpLog, LivePg);
+
+/**
  * A callback called when writing an operation
  *
  * @callback LivePg~writeOpCallback
@@ -230,23 +264,23 @@ LivePg.prototype.bulkGetSnapshot = function bulkGetSnapshot(requests, cb) {
  * @method
  * @param {string} cName a collection name
  * @param {string} docName a document name
- * @param {Object} opData the operation data
+ * @param {Object} data the operation data
  * @param {LivePg~writeOpCallback} cb a callback called with the op data
  */
-LivePg.prototype.writeOp = function writeOp(cName, docName, opData, cb) {
+LivePg.OpLog.prototype.writeOp = function writeOp(cName, docName, data, cb) {
   var insert = {};
-  insert[this.opVersionColumn]    = opData.v;
-  insert[this.opDataColumn]       = opData;
-  insert[this.opCollectionColumn] = cName;
-  insert[this.opDocumentColumn]   = docName;
+  insert[this.versionColumn]    = data.v;
+  insert[this.dataColumn]       = data;
+  insert[this.collectionColumn] = cName;
+  insert[this.documentColumn]   = docName;
 
   this.db(this.table)
     .insert(insert)
-    .returning(this.opDataColumn)
+    .returning(this.dataColumn)
     .exec(function onResult(err) {
       if (err && err.code !== '23505')
         return cb(err, null);
-      cb(null, opData);
+      cb(null, data);
     });
 };
 
@@ -265,21 +299,21 @@ LivePg.prototype.writeOp = function writeOp(cName, docName, opData, cb) {
  * @param {string} docName a document name
  * @param {LivePg~getVersionCallback} cb a callback called with the next version
  */
-LivePg.prototype.getVersion = function getVersion(cName, docName, cb) {
+LivePg.OpLog.prototype.getVersion = function getVersion(cName, docName, cb) {
   var where = {};
-  where[this.opCollectionColumn] = cName;
-  where[this.opDocumentColumn]   = docName;
+  where[this.collectionColumn] = cName;
+  where[this.documentColumn]   = docName;
 
-  var opVersionColumn = this.opVersionColumn;
+  var versionColumn = this.versionColumn;
 
   this.db(this.table)
     .where(where)
-    .select(opVersionColumn)
-    .orderBy(opVersionColumn, 'desc')
+    .select(versionColumn)
+    .orderBy(versionColumn, 'desc')
     .limit(1)
     .exec(function onResult(err, rows) {
       if (err) return cb(err, null);
-      cb(null, rows.length ? parseInt(rows[0][opVersionColumn], 10) + 1 : 0);
+      cb(null, rows.length ? parseInt(rows[0][versionColumn], 10) + 1 : 0);
     });
 };
 
@@ -300,28 +334,28 @@ LivePg.prototype.getVersion = function getVersion(cName, docName, cb) {
  * @param {?end} end the end version
  * @param {LivePg~getOpsCallback} cb a callback called with the ops
  */
-LivePg.prototype.getOps = function getOps(cName, docName, start, end, cb) {
+LivePg.OpLog.prototype.getOps = function getOps(cName, docName, start, end, cb) {
   var andWhere = {};
-  andWhere[this.opCollectionColumn] = cName;
-  andWhere[this.opDocumentColumn]   = docName;
+  andWhere[this.collectionColumn] = cName;
+  andWhere[this.documentColumn]   = docName;
 
-  var opDataColumn    = this.opDataColumn;
-  var opVersionColumn = this.opVersionColumn;
+  var dataColumn    = this.dataColumn;
+  var versionColumn = this.versionColumn;
 
   var query = this.db(this.table)
-    .where(opVersionColumn, '>=', start)
+    .where(versionColumn, '>=', start)
     .andWhere(andWhere);
 
   if (typeof end === 'number') {
-    query.andWhere(opVersionColumn, '<', end);
+    query.andWhere(versionColumn, '<', end);
   }
 
-  query.select(opDataColumn)
-    .orderBy(opVersionColumn, 'asc')
+  query.select(dataColumn)
+    .orderBy(versionColumn, 'asc')
     .exec(function onResult(err, rows) {
       if (err) return cb(err, null);
       cb(null, rows.map(function eachRow(row) {
-        return row[opDataColumn];
+        return row[dataColumn];
       }));
     });
 };

@@ -17,6 +17,9 @@ livedb-postgresql has relatively relaxed requirements for the database it
 connects to. The table names can be anything, because they're set when creating
 an instance of livedb-postgresql.
 
+The column names are also configuration, see the inline documentation for
+examples.
+
 #### Snapshots Table
 
 | Column Name | Type |
@@ -72,8 +75,8 @@ var redis2    = redis.createClient(redisURL.port, redisURL.hostname, { auth_pass
 
 // Postgres clients
 var connString = process.env.DATABASE_URL;
-var snapshotDb = new LivePg({ conn: connString, table: 'documents' });
-var opLog      = new LivePg({ conn: connString, table: 'operations' });
+var snapshotDb = new LivePg.Snapshots({ conn: connString, table: 'documents' });
+var opLog      = new LivePg.OpLog({ conn: connString, table: 'operations' });
 
 var driver     = livedb.redisDriver(opLog, redis1, redis2);
 var liveClient = livedb.client({ snapshotDb: snapshotDb, driver: driver });
