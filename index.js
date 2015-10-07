@@ -17,12 +17,13 @@ pg.on('end', function onPgEnd() {
  * @class
  * @param {object} opts An object of options
  * @param {string} opts.conn A PostgreSQL connection URL
+ * @param {string} opts.db An optional existing Knex database client
  * @param {string} opts.table A database table name
  */
 function LivePg(opts) {
   this.conn  = required(opts, 'conn');
   this.table = required(opts, 'table');
-  this.db    = knex({ client: 'pg', connection: this.conn });
+  this.db    = opts.db || knex({ client: 'pg', connection: this.conn });
 }
 
 /**
