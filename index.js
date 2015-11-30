@@ -39,13 +39,17 @@ function LivePg(opts) {
  *   snapshot table with the document
  * @param {string} opts.dataColumn The name of the column in the
  *   snapshot table with the snapshot data
+ * @param {Function?} opts.snapshotWriteLock A function called with a DB client
+ *   and a callback that should lock the snapshots table. Call the callback with
+ *   an error, otherwise with `(null, null)`.
  */
 LivePg.Snapshots = function LivePgSnapshots(opts) {
   LivePg.call(this, opts);
 
-  this.collectionColumn = defaults(opts, 'collectionColumn', 'collection');
-  this.nameColumn       = defaults(opts, 'nameColumn', 'name');
-  this.dataColumn       = defaults(opts, 'dataColumn', 'data');
+  this.collectionColumn  = defaults(opts, 'collectionColumn', 'collection');
+  this.dataColumn        = defaults(opts, 'dataColumn', 'data');
+  this.nameColumn        = defaults(opts, 'nameColumn', 'name');
+  this.snapshotWriteLock = opts.snapshotWriteLock;
 };
 
 inherits(LivePg.Snapshots, LivePg);
@@ -114,9 +118,10 @@ LivePg.Snapshots.prototype.writeSnapshot = function writeSnapshot(cName, docName
   var table = this.table;
   var client, done;
 
-  var collectionColumn = this.collectionColumn;
-  var dataColumn       = this.dataColumn;
-  var nameColumn       = this.nameColumn;
+  var collectionColumn  = this.collectionColumn;
+  var dataColumn        = this.dataColumn;
+  var nameColumn        = this.nameColumn;
+  var snapshotWriteLock = this.snapshotWriteLock;
 
   async.waterfall([
     connect,
@@ -141,6 +146,11 @@ LivePg.Snapshots.prototype.writeSnapshot = function writeSnapshot(cName, docName
   }
 
   function lock(res, callback) {
+    if (snapshotWriteLock) {
+      snapshotWriteLock(client, callback);
+      return;
+    }
+
     var _table = client.escapeIdentifier(table);
     var query  = fmt('LOCK TABLE %s IN SHARE ROW EXCLUSIVE MODE;', _table);
     client.query(query, callback);

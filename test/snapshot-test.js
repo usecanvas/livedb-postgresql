@@ -58,6 +58,29 @@ describe('LivePg (snapshots)', function() {
       });
     });
 
+    it('accepts a snapshot lock function', function(done) {
+      var testObject = {};
+
+      livePg = new LivePg.Snapshots({
+        conn             : process.env.PG_URL,
+        table            : 'documents',
+        collectionColumn : 'collection_name',
+        nameColumn       : 'name',
+        dataColumn       : 'data',
+        snapshotWriteLock: function lockSnapshots(client, callback) {
+          testObject.foo = 'bar';
+          callback(null, null);
+        }
+      });
+
+      livePg.writeSnapshot('collection', 'name', { v: 1 }, function(err, doc) {
+        if (err) throw err;
+        testObject.foo.should.eql('bar');
+        doc.should.eql({ v: 1 });
+        done();
+      });
+    });
+
     it('updates the document if it exists', function(done) {
       async.waterfall([
         function(cb) {
