@@ -14,8 +14,8 @@ describe('LivePg (snapshots)', function() {
       conn            : process.env.PG_URL,
       table           : 'documents',
       collectionColumn: 'collection_name',
-      nameColumn      : 'docname',
-      dataColumn      : 'json',
+      nameColumn      : 'name',
+      dataColumn      : 'data',
     });
 
     truncateTables(done);

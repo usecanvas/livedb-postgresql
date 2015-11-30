@@ -43,12 +43,12 @@ Here is an example SQL statement that will work with livedb-postgresql:
 
 ```sql
 CREATE TABLE documents(
-  collection text NOT NULL,
+  collection_name text NOT NULL,
   name text NOT NULL,
   data json NOT NULL
 );
 
-CREATE UNIQUE INDEX documents_collection_name ON documents(collection, name);
+CREATE UNIQUE INDEX documents_collection_name ON documents(collection_name, name);
 
 CREATE TABLE operations(
   collection_name text NOT NULL,
