@@ -20,5 +20,5 @@ exports.truncateTables = function truncateTables(cb) {
 };
 
 function truncateTable(tableName, cb) {
-  db.raw('TRUNCATE TABLE ' + tableName + ';').exec(cb);
+  db.raw('TRUNCATE TABLE ' + tableName + ';').asCallback(cb);
 }

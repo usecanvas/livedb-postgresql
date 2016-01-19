@@ -86,7 +86,7 @@ LivePg.Snapshots.prototype.getSnapshot = function getSnapshot(cName, docName, cb
     .where(where)
     .select(dataColumn)
     .limit(1)
-    .exec(function onResult(err, rows) {
+    .asCallback(function onResult(err, rows) {
       if (err) return cb(err, null);
       cb(null, rows.length ? rows[0][dataColumn] : null);
     });
@@ -210,7 +210,7 @@ LivePg.Snapshots.prototype.bulkGetSnapshot = function bulkGetSnapshot(requests, 
       .andWhere(andWhere);
   });
 
-  query.exec(function onDone(err, results) {
+  query.asCallback(function onDone(err, results) {
     if (err) return cb(err, null);
 
     results = results.reduce(function eachResult(obj, result) {
@@ -288,7 +288,7 @@ LivePg.OpLog.prototype.writeOp = function writeOp(cName, docName, data, cb) {
   this.db(this.table)
     .insert(insert)
     .returning(this.dataColumn)
-    .exec(function onResult(err) {
+    .asCallback(function onResult(err) {
       if (err && err.code !== '23505')
         return cb(err, null);
       cb(null, data);
@@ -322,7 +322,7 @@ LivePg.OpLog.prototype.getVersion = function getVersion(cName, docName, cb) {
     .select(versionColumn)
     .orderBy(versionColumn, 'desc')
     .limit(1)
-    .exec(function onResult(err, rows) {
+    .asCallback(function onResult(err, rows) {
       if (err) return cb(err, null);
       cb(null, rows.length ? parseInt(rows[0][versionColumn], 10) + 1 : 0);
     });
@@ -363,7 +363,7 @@ LivePg.OpLog.prototype.getOps = function getOps(cName, docName, start, end, cb) 
 
   query.select(dataColumn)
     .orderBy(versionColumn, 'asc')
-    .exec(function onResult(err, rows) {
+    .asCallback(function onResult(err, rows) {
       if (err) return cb(err, null);
       cb(null, rows.map(function eachRow(row) {
         return row[dataColumn];
